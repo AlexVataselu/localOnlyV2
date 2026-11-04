@@ -66,7 +66,7 @@ const HeaderLeft = styled.div`
 const HeaderCenter = styled.div`
   flex: 1;
   min-width: 0;
-  max-width: 400px;
+  max-width: 480px;
   margin: 0 2rem;
 
   @media (max-width: 900px) {

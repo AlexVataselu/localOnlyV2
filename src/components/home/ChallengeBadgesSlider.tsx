@@ -91,12 +91,12 @@ const NavBtn = styled.button<{ $active?: boolean }>`
   }
 `;
 
-const SliderWrap = styled.div`
+const SliderWrap = styled.div<{ $dense?: boolean }>`
   width: 100%;
   position: relative;
   overflow: hidden;
-  padding-top: 2.25rem;
-  padding-bottom: 2.25rem;
+  padding-top: ${({ $dense }) => ($dense ? "0" : "2.25rem")};
+  padding-bottom: ${({ $dense }) => ($dense ? "0" : "2.25rem")};
 `;
 
 const Track = styled.div`
@@ -159,6 +159,8 @@ export interface ChallengeBadgesSliderProps {
   challenges?: HeroChallenge[];
   /** Section title above the badge slider. */
   title?: string;
+  /** Less space around the cards, for when the slider sits inside the hero. */
+  dense?: boolean;
 }
 
 const DEFAULT_TITLE = "Challenge your friends and earn badges";
@@ -166,6 +168,7 @@ const DEFAULT_TITLE = "Challenge your friends and earn badges";
 export default function ChallengeBadgesSlider({
   challenges = DEFAULT_CHALLENGES,
   title = DEFAULT_TITLE,
+  dense = false,
 }: ChallengeBadgesSliderProps) {
   const [offset, setOffset] = useState(0);
   const [trackRef, trackWidth] = useElementWidth<HTMLDivElement>(1400);
@@ -209,7 +212,7 @@ export default function ChallengeBadgesSlider({
           </NavBtn>
         </NavArrowsWrap>
       </Header>
-      <SliderWrap>
+      <SliderWrap $dense={dense}>
         <Track ref={trackRef}>
           <List $offset={offset}>
             {challenges.map((c) => (

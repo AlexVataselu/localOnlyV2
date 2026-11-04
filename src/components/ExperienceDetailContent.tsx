@@ -594,6 +594,16 @@ const SliderNavBtn = styled.button<{ $disabled?: boolean }>`
 const SliderTrack = styled.div`
   overflow: hidden;
 `;
+/* Every similar card stretches to the tallest one, so the row lines up. */
+const SimilarSlot = styled.div`
+  flex: 0 0 280px;
+  display: flex;
+
+  & > * {
+    flex: 1;
+  }
+`;
+
 const SliderList = styled.div<{ $offset: number }>`
   display: flex;
   gap: 1rem;
@@ -1341,16 +1351,16 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
             <SliderHeader>
               <SliderTitle>Similar experiences</SliderTitle>
               <SliderNav>
-                <SliderNavBtn $disabled={similarOffset >= 0} onClick={() => slide(similarRef, setSimilarOffset, 1, 280)} aria-label="Prev"><ChevronLeft size={20} /></SliderNavBtn>
-                <SliderNavBtn $disabled={similarOffset <= -(similar.length * 280)} onClick={() => slide(similarRef, setSimilarOffset, -1, 280)} aria-label="Next"><ChevronRight size={20} /></SliderNavBtn>
+                <SliderNavBtn $disabled={similarOffset >= 0} onClick={() => slide(similarRef, setSimilarOffset, 1, 280)} aria-label="Previous similar experiences"><ChevronLeft size={20} /></SliderNavBtn>
+                <SliderNavBtn $disabled={similarOffset <= -(similar.length * 280)} onClick={() => slide(similarRef, setSimilarOffset, -1, 280)} aria-label="Next similar experiences"><ChevronRight size={20} /></SliderNavBtn>
               </SliderNav>
             </SliderHeader>
             <SliderTrack ref={similarRef}>
               <SliderList $offset={similarOffset}>
                 {similar.map((e) => (
-                  <div key={e.id} style={{ flexShrink: 0, width: 280 }}>
+                  <SimilarSlot key={e.id}>
                     <ExperienceCard experience={e} />
-                  </div>
+                  </SimilarSlot>
                 ))}
               </SliderList>
             </SliderTrack>
