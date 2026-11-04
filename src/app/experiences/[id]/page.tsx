@@ -1,83 +1,36 @@
-import { headers } from "next/headers";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import ExperienceDetailContent from "@/components/ExperienceDetailContent";
+import { cache } from "react";
+import ExperienceDetail from "@/components/ExperienceDetail";
+import { api, ApiError } from "@/lib/api/server";
+import type { Experience } from "@/types/experience";
 
 export const dynamic = "force-dynamic";
 
-async function getBaseUrl() {
-  const headersList = await headers();
-  const host = headersList.get("host");
-  const forwardedHost = headersList.get("x-forwarded-host");
-  const protoHeader = headersList.get("x-forwarded-proto");
-  const hostname = forwardedHost ?? host;
-
-  if (!hostname) {
-    const envHost = process.env.NEXT_PUBLIC_BASE_URL;
-    if (envHost) {
-      return envHost.replace(/\/$/, "");
-    }
-    throw new Error("Unable to resolve request host");
+/** Direct server-to-API call: no self-fetch through request headers. */
+const getExperience = cache(async (id: string) => {
+  try {
+    return await api<Experience>(`/experiences/${encodeURIComponent(id)}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
   }
+});
 
-  const protocol =
-    (protoHeader ? protoHeader.split(",")[0]?.trim() : undefined) ??
-    (hostname.startsWith("localhost") || hostname.startsWith("127.0.0.1")
-      ? "http"
-      : "https");
+type Props = { params: Promise<{ id: string }> };
 
-  return `${protocol}://${hostname}`;
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const experience = await getExperience((await params).id);
+  if (!experience) return { title: "Experience not found" };
+  return {
+    title: experience.title,
+    description: experience.description?.slice(0, 160) ?? `${experience.title} in ${experience.location}`,
+    openGraph: { images: [experience.image] },
+  };
 }
 
-async function getExperience(id: string) {
-  if (!id) {
-    return null;
-  }
-
-  const baseUrl = await getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/experiences/${id}`, {
-    cache: "no-store",
-  });
-
-  if (res.status === 404) {
-    return null;
-  }
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch experience");
-  }
-
-  return res.json();
+export default async function ExperienceDetailPage({ params }: Props) {
+  const experience = await getExperience((await params).id);
+  if (!experience) notFound();
+  return <ExperienceDetail experience={experience} />;
 }
-
-export default async function ExperienceDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const experience = await getExperience(id);
-
-  if (!experience) {
-    notFound();
-  }
-
-  return (
-    <ExperienceDetailContent
-      experience={{
-        id: experience.id,
-        title: experience.title,
-        location: experience.location,
-        price: Number(experience.price),
-        rating: Number(experience.rating),
-        image: experience.image,
-        description: experience.description ?? "",
-        hostName: experience.hostName,
-        activityTypes: (experience.activityTypes as any) || [],
-        timeOfDays: (experience.timeOfDays as any) || [],
-        duration: (experience.duration as any) || null,
-        specials: (experience.specials as any) || [],
-      }}
-    />
-  );
-}
-

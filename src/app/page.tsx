@@ -1,34 +1,29 @@
-"use client";
-
-import styled from "styled-components";
+import AppFooter from "@/components/AppFooter";
 import {
-  HomeHeader,
-  HeroSection,
-  FeatureCards,
-  NewThisWeekSection,
+  BadgesSection,
   CTABanner,
+  FeatureCards,
+  HeroSection,
   LocalGuidesSection,
+  NewestExperiencesSection,
   PartnersSection,
 } from "@/components/home";
-import AppFooter from "@/components/AppFooter";
-
-const PageWrapper = styled.div`
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-`;
+import SiteHeader from "@/components/ui/SiteHeader";
 
 export default function Home() {
   return (
-    <PageWrapper>
-      <HomeHeader />
-      <HeroSection />
-      <FeatureCards />
-      <NewThisWeekSection />
-      <CTABanner />
-      <LocalGuidesSection />
-      <PartnersSection />
+    <>
+      <SiteHeader overlay />
+      <main id="main">
+        <HeroSection />
+        <FeatureCards />
+        <NewestExperiencesSection />
+        <CTABanner />
+        <LocalGuidesSection />
+        <BadgesSection />
+        <PartnersSection />
+      </main>
       <AppFooter />
-    </PageWrapper>
+    </>
   );
 }

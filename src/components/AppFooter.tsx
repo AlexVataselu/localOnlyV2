@@ -1,168 +1,92 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import styled from "styled-components";
 
 const Footer = styled.footer`
-  width: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 3rem clamp(24px, 5vw, 80px);
-  margin-top: 4rem;
-
-  @media (max-width: 768px) {
-    padding: 2rem clamp(24px, 5vw, 80px);
-    margin-top: 2rem;
-  }
+  margin-top: clamp(2rem, 5vw, 4rem);
+  padding: 3rem clamp(16px, 5vw, 80px) 2rem;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
 `;
 
-const FooterInner = styled.div`
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  box-sizing: border-box;
-
-  @media (max-width: 768px) {
-    gap: 1.5rem;
-  }
-`;
-
-const FooterContent = styled.div`
+const Top = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 3rem;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 2rem 3rem;
   align-items: start;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 2rem;
-  }
-
-  @media (max-width: 768px) {
+  @media (max-width: 720px) {
     grid-template-columns: 1fr;
-    gap: 2rem;
   }
 `;
 
-const FooterLogoSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  align-items: flex-start;
-
-  @media (max-width: 768px) {
-    align-items: center;
-    text-align: center;
-  }
-`;
-
-const FooterLogoLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: transform 0.2s ease;
-
-  &:hover {
-    transform: scale(1.05);
-  }
-`;
-
-const FooterLogo = styled(Image)`
-  width: 120px;
-  height: auto;
-  filter: brightness(0.95);
-`;
-
-const FooterSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const FooterTitle = styled.h3`
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
+const Title = styled.h2`
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-const FooterLink = styled(Link)`
+const Text = styled.p`
+  margin: 0;
+  max-width: 48ch;
   color: ${({ theme }) => theme.colors.textSecondary};
-  text-decoration: none;
-  font-size: 0.95rem;
-  transition: color 0.2s ease;
+`;
 
-  &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+const Links = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    text-decoration: none;
+  }
+  a:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    text-decoration: underline;
   }
 `;
 
-const FooterText = styled.p`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 0.95rem;
-  margin: 0;
-  line-height: 1.6;
-`;
-
-const FooterBottom = styled.div`
-  padding-top: 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-`;
-
-const Copyright = styled.p`
-  color: ${({ theme }) => theme.colors.textSecondary};
+const Bottom = styled.p`
+  margin: 2rem 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
   font-size: 0.9rem;
-  margin: 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export default function AppFooter() {
   return (
     <Footer>
-      <FooterInner>
-        <FooterContent>
-          <FooterSection>
-            <FooterTitle>Locals Only</FooterTitle>
-            <FooterText>
-              Discover unique local experiences and connect with authentic hosts around the world.
-            </FooterText>
-          </FooterSection>
-          <FooterSection>
-            <FooterTitle>Explore</FooterTitle>
-            <FooterLink href="/experiences">Browse Experiences</FooterLink>
-            <FooterLink href="/experiences/new">Host an Experience</FooterLink>
-            <FooterLink href="/">Home</FooterLink>
-          </FooterSection>
-          <FooterSection>
-            <FooterTitle>About</FooterTitle>
-            <FooterLink href="#">How it works</FooterLink>
-            <FooterLink href="#">Safety</FooterLink>
-            <FooterLink href="#">Contact Us</FooterLink>
-          </FooterSection>
-          <FooterLogoSection>
-            <FooterLogoLink href="/">
-              <FooterLogo
-                src="/localsOnlyLogoV4.7Tryangle.png"
-                alt="Locals Only"
-                width={120}
-                height={120}
-              />
-            </FooterLogoLink>
-          </FooterLogoSection>
-        </FooterContent>
-        <FooterBottom>
-          <Copyright>© {new Date().getFullYear()} Locals Only. All rights reserved.</Copyright>
-        </FooterBottom>
-      </FooterInner>
+      <Top>
+        <div>
+          <Title>Locals Only</Title>
+          <Text>Experiences across Romania, hosted by the people who live there.</Text>
+        </div>
+        <nav aria-label="Footer">
+          <Title as="p">Explore</Title>
+          <Links>
+            <li>
+              <Link href="/experiences">Browse experiences</Link>
+            </li>
+            <li>
+              <Link href="/experiences/new">Host an experience</Link>
+            </li>
+          </Links>
+        </nav>
+        <Link href="/" aria-label="Locals Only home">
+          <Image src="/localsOnlyLogoV4.7Tryangle.png" alt="" width={110} height={110} />
+        </Link>
+      </Top>
+      <Bottom>© {new Date().getFullYear()} Locals Only</Bottom>
     </Footer>
   );
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import styled from "styled-components";
 import { Moon, Sun } from "lucide-react";
 import { useThemeMode } from "@/app/providers";
@@ -6,24 +8,17 @@ const ToggleButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border-radius: 999px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
+  background: ${({ theme }) => theme.colors.surfaceRaised};
   color: ${({ theme }) => theme.colors.textPrimary};
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.accent};
-    outline-offset: 2px;
   }
 `;
 
@@ -35,12 +30,10 @@ export default function ThemeToggle() {
     <ToggleButton
       type="button"
       onClick={toggleTheme}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      aria-pressed={isDark}
-      title={isDark ? "Light mode" : "Dark mode"}
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      title={isDark ? "Light theme" : "Dark theme"}
     >
-      {isDark ? <Sun size={18} strokeWidth={2} /> : <Moon size={18} strokeWidth={2} />}
+      {isDark ? <Sun size={18} aria-hidden /> : <Moon size={18} aria-hidden />}
     </ToggleButton>
   );
 }
-

@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
 import {
-  PropsWithChildren,
+  type PropsWithChildren,
   createContext,
   useCallback,
   useContext,
@@ -23,15 +23,23 @@ interface ThemeContextValue {
 }
 
 const ThemeModeContext = createContext<ThemeContextValue | undefined>(undefined);
+const STORAGE_KEY = "theme-mode";
 
 export function useThemeMode() {
   const context = useContext(ThemeModeContext);
-
   if (!context) {
     throw new Error("useThemeMode must be used within the Providers component");
   }
-
   return context;
+}
+
+function readStoredTheme(): ThemeMode | null {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return stored === "light" || stored === "dark" ? stored : null;
+  } catch {
+    return null;
+  }
 }
 
 export function Providers({ children }: PropsWithChildren) {
@@ -41,40 +49,40 @@ export function Providers({ children }: PropsWithChildren) {
         defaultOptions: {
           queries: {
             refetchOnWindowFocus: false,
-            refetchOnMount: false,
-            staleTime: 5 * 60 * 1000, // 5 minutes
+            staleTime: 60 * 1000,
+            retry: 1,
           },
         },
-      })
+      }),
   );
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
 
   useEffect(() => {
-    const storedTheme = window.localStorage.getItem("theme-mode");
-
-    if (storedTheme === "light" || storedTheme === "dark") {
-      setThemeMode(storedTheme);
-    }
+    const stored = readStoredTheme();
+    // Sync with the persisted preference once on mount (localStorage is unavailable during SSR).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (stored) setThemeMode(stored);
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem("theme-mode", themeMode);
     document.documentElement.dataset.theme = themeMode;
+    document.documentElement.style.colorScheme = themeMode;
   }, [themeMode]);
 
   const toggleTheme = useCallback(() => {
-    setThemeMode((current) => (current === "light" ? "dark" : "light"));
+    setThemeMode((current) => {
+      const next = current === "light" ? "dark" : "light";
+      try {
+        window.localStorage.setItem(STORAGE_KEY, next);
+      } catch {
+        // Storage can be blocked (private mode); the toggle still works for this visit.
+      }
+      return next;
+    });
   }, []);
 
-  const theme = useMemo(() => (themeMode === "light" ? lightTheme : darkTheme), [themeMode]);
-
-  const contextValue = useMemo(
-    () => ({
-      themeMode,
-      toggleTheme,
-    }),
-    [themeMode, toggleTheme],
-  );
+  const theme = themeMode === "light" ? lightTheme : darkTheme;
+  const contextValue = useMemo(() => ({ themeMode, toggleTheme }), [themeMode, toggleTheme]);
 
   return (
     <SessionProvider>
@@ -89,4 +97,3 @@ export function Providers({ children }: PropsWithChildren) {
     </SessionProvider>
   );
 }
-

@@ -1,182 +1,146 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import styled from "styled-components";
 
-const Section = styled.section`
-  width: 100%;
-  padding: 2rem clamp(24px, 5vw, 80px);
+const Wrap = styled.section`
+  padding: 2.5rem clamp(16px, 5vw, 80px);
   background: ${({ theme }) => theme.colors.surface};
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-block: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const Inner = styled.div`
-  width: 100%;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: clamp(1.25rem, 4vw, 3rem);
 
-  @media (max-width: 900px) {
+  @media (max-width: 760px) {
     flex-direction: column;
-    gap: 1.25rem;
+    align-items: flex-start;
   }
 `;
 
-const LogoWrap = styled.div`
-  flex-shrink: 0;
+const Logo = styled.div`
   position: relative;
-  width: clamp(120px, 16vw, 180px);
-  height: clamp(150px, 20vw, 220px);
-
-  @media (max-width: 900px) {
-    width: 140px;
-    height: 170px;
-  }
+  flex-shrink: 0;
+  width: clamp(110px, 14vw, 170px);
+  aspect-ratio: 180 / 220;
 `;
 
-const RightRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.5rem;
+const Copy = styled.div`
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
 
-  @media (max-width: 900px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
+const Heading = styled.h2`
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  line-height: 1.35;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  em {
+    display: inline;
+    font-style: normal;
+    font-weight: 900;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
   }
 `;
 
-const Frame = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0;
-  width: 100%;
-  max-width: 520px;
-  flex-grow: 1;
-`;
-
-const MainText = styled.div`
+const Sub = styled.p`
   margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  line-height: 1.25;
-`;
-
-const Small = styled.span`
-  font-size: clamp(0.9rem, 1.2vw, 1.05rem);
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const Emph = styled.span`
-  font-size: clamp(1.5rem, 2.8vw, 2rem);
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const SubText = styled.p`
-  margin: 0;
-  font-size: clamp(0.85rem, 1.2vw, 0.95rem);
-  font-weight: 500;
   color: ${({ theme }) => theme.colors.textSecondary};
-  line-height: 1.4;
 `;
 
-const CtaButton = styled(Link)`
-  display: inline-block;
-  margin-top: 0.25rem;
-  padding: 0.7rem 1.4rem;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  text-decoration: none;
-  text-align: center;
-  white-space: nowrap;
+const Primary = styled(Link)`
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.4rem;
+  border-radius: 999px;
   background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.onAccent};
-  transition: background 0.2s, transform 0.2s;
+  font-weight: 800;
+  text-decoration: none;
 
   &:hover {
     background: ${({ theme }) => theme.colors.accentHover};
-    transform: scale(1.02);
   }
 `;
 
-const Tags = styled.div`
+const Tags = styled.ul`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.5rem;
-  flex-shrink: 0;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 
-  @media (max-width: 900px) {
+  @media (max-width: 760px) {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: flex-start;
   }
 `;
 
 const Tag = styled(Link)`
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceRaised};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-weight: 700;
+  font-size: 0.9rem;
   text-decoration: none;
-  text-align: center;
   white-space: nowrap;
-  background: #ffffff;
-  color: #1f1f1f;
-  transition: opacity 0.2s, transform 0.2s;
 
   &:hover {
-    opacity: 0.9;
-    transform: scale(1.02);
+    border-color: ${({ theme }) => theme.colors.accent};
   }
 `;
 
+const TAGS = [
+  { label: "Outdoors", href: "/experiences?activityTypes=NATURE_AND_OUTDOORS" },
+  { label: "Sports", href: "/experiences?activityTypes=SPORTS" },
+  { label: "Food & drink", href: "/experiences?activityTypes=FOOD_AND_DRINK" },
+];
+
 export default function CTABanner() {
   return (
-    <Section>
+    <Wrap aria-labelledby="cta-title">
       <Inner>
-        <LogoWrap>
-          <Image
-            src="/logoSample.png"
-            alt="Locals Only"
-            fill
-            style={{ objectFit: "contain" }}
-          />
-        </LogoWrap>
-        <RightRow>
-          <Frame>
-            <MainText>
-              <Small>Not just an </Small>
-              <Emph>experience,</Emph>
-              <br />
-              <Small>but the way of </Small>
-              <Emph>local living</Emph>
-            </MainText>
-            <SubText>Travel and experience the local activities</SubText>
-            <CtaButton href="/experiences">All experiences</CtaButton>
-          </Frame>
+        <Logo>
+          <Image src="/logoSample.png" alt="" fill sizes="170px" style={{ objectFit: "contain" }} />
+        </Logo>
+        <Copy>
+          <Heading id="cta-title">
+            Not just an <em>experience,</em>
+            <br />
+            but the way of <em>local living</em>
+          </Heading>
+          <Sub>Spend a day the way the people who live there do.</Sub>
+          <Primary href="/experiences">Browse all experiences</Primary>
+        </Copy>
+        <nav aria-label="Popular categories">
           <Tags>
-            <Tag href="/experiences">Extreme Adventures</Tag>
-            <Tag href="/experiences">Sports</Tag>
-            <Tag href="/experiences">Foraging</Tag>
+            {TAGS.map((t) => (
+              <li key={t.label}>
+                <Tag href={t.href}>{t.label}</Tag>
+              </li>
+            ))}
           </Tags>
-        </RightRow>
+        </nav>
       </Inner>
-    </Section>
+    </Wrap>
   );
 }

@@ -4,33 +4,41 @@ import { memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
-import { Experience } from "@/types/experience";
+import Rating from "@/components/ui/Rating";
+import type { Experience } from "@/types/experience";
+import { ACTIVITY_TYPE_LABELS, DURATION_LABELS } from "@/types/filters";
 import { formatPrice } from "@/utils/formatters";
 
-export const CARD_IMAGE_RATIO = 1.5; // 3:2 aspect ratio
+export const CARD_IMAGE_RATIO = 1.5; // 3:2
 
-const Card = styled(Link)`
+const Card = styled.article`
+  position: relative;
   display: flex;
   flex-direction: column;
+  height: 100%;
   border-radius: 16px;
   overflow: hidden;
-  /* liquid glass - match ChallengeBadgeCard */
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-  will-change: transform;
+  border: 1px solid ${({ theme }) => theme.colors.glassBorder};
+  background: ${({ theme }) => theme.colors.glass};
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: ${({ theme }) => theme.shadows.card};
 
   &:hover {
-    transform: translateY(-4px) translateZ(0);
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    background: ${({ theme }) => theme.colors.glassHover};
+    box-shadow: ${({ theme }) => theme.shadows.cardHover};
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    &:hover {
+      transform: translateY(-3px);
+    }
+  }
+
+  &:focus-within {
+    outline: 2px solid ${({ theme }) => theme.colors.focus};
+    outline-offset: 2px;
   }
 `;
 
@@ -38,188 +46,128 @@ const ImageWrapper = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: ${CARD_IMAGE_RATIO};
-  background: transparent;
+  background: ${({ theme }) => theme.colors.surface};
 `;
 
-const Info = styled.div`
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+const Body = styled.div`
   flex: 1;
-  justify-content: space-between;
-`;
-
-const TopSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  padding: 1rem 1.1rem 1.1rem;
 `;
 
 const Title = styled.h3`
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 700;
   line-height: 1.3;
-`;
-
-const TagsContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.25rem;
-`;
-
-const Tag = styled.span`
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  white-space: nowrap;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-  transform: translateY(0);
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-    background: rgba(255, 255, 255, 0.15);
-    border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
-  }
-`;
-
-const Location = styled.p`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 0.9rem;
-`;
-
-const Host = styled.p`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 0.85rem;
-`;
-
-const BottomRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-`;
-
-const Rating = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const StarsContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-`;
-
-const Star = styled.span<{ $filled: boolean }>`
-  font-size: 1rem;
-  color: ${({ $filled, theme }) => 
-    $filled ? '#FFD700' : theme.colors.textSecondary};
-  opacity: ${({ $filled }) => $filled ? 1 : 0.3};
-  line-height: 1;
-`;
-
-const RatingValue = styled.span`
-  font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-const Price = styled.div`
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.accent};
-  white-space: nowrap;
+/** Whole card is clickable; the link text is the title. */
+const CardLink = styled(Link)`
+  color: inherit;
+  text-decoration: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
 `;
 
-function ExperienceCardComponent({ experience }: { experience: Experience }) {
-  const rating = experience.rating;
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+const Meta = styled.p`
+  margin: 0;
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
 
-  // Collect all filter tags
-  const tags: string[] = [];
-  if (experience.activityTypes && experience.activityTypes.length > 0) {
-    tags.push(...experience.activityTypes);
+const Tags = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textSecondary};
   }
-  if (experience.timeOfDays && experience.timeOfDays.length > 0) {
-    tags.push(...experience.timeOfDays);
+`;
+
+const Bottom = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 0.6rem;
+`;
+
+const Price = styled.p`
+  margin: 0;
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  white-space: nowrap;
+
+  strong {
+    font-size: 1.15rem;
+    color: ${({ theme }) => theme.colors.textPrimary};
   }
-  if (experience.duration) {
-    tags.push(experience.duration);
-  }
-  if (experience.specials && experience.specials.length > 0) {
-    tags.push(...experience.specials);
-  }
+`;
+
+function ExperienceCard({ experience, priority = false }: { experience: Experience; priority?: boolean }) {
+  const tags = [
+    ...experience.activityTypes.slice(0, 2).map((t) => ACTIVITY_TYPE_LABELS[t]),
+    ...(experience.duration ? [DURATION_LABELS[experience.duration]] : []),
+  ];
 
   return (
-    <Card href={`/experiences/${experience.id}`} scroll={false}>
+    <Card>
       <ImageWrapper>
         <Image
           src={experience.image}
-          alt={experience.title}
+          alt=""
           fill
-          sizes="(max-width: 600px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          loading="lazy"
+          sizes="(max-width: 720px) 100vw, (max-width: 1080px) 50vw, 33vw"
+          priority={priority}
           style={{ objectFit: "cover" }}
         />
       </ImageWrapper>
-      <Info>
-        <TopSection>
-          <Title>{experience.title}</Title>
-          {tags.length > 0 && (
-            <TagsContainer>
-              {tags.map((tag, index) => (
-                <Tag key={`${tag}-${index}`}>{tag}</Tag>
-              ))}
-            </TagsContainer>
-          )}
-          <Location>{experience.location}</Location>
-          {experience.hostName && <Host>Hosted by {experience.hostName}</Host>}
-        </TopSection>
-        <BottomRow>
-          <Rating aria-label={`Rating ${rating.toFixed(1)} out of 5`}>
-            <StarsContainer>
-              {Array.from({ length: fullStars }).map((_, i) => (
-                <Star key={`full-${i}`} $filled={true} aria-hidden="true">
-                  ★
-                </Star>
-              ))}
-              {hasHalfStar && (
-                <Star $filled={true} aria-hidden="true" style={{ opacity: 0.6 }}>
-                  ★
-                </Star>
-              )}
-              {Array.from({ length: emptyStars }).map((_, i) => (
-                <Star key={`empty-${i}`} $filled={false} aria-hidden="true">
-                  ★
-                </Star>
-              ))}
-            </StarsContainer>
-            <RatingValue>{rating.toFixed(1)}</RatingValue>
-          </Rating>
-          <Price>{formatPrice(experience.price)}</Price>
-        </BottomRow>
-      </Info>
+      <Body>
+        <Title>
+          <CardLink href={`/experiences/${experience.id}`}>{experience.title}</CardLink>
+        </Title>
+        <Meta>
+          {experience.location}
+          {experience.host.name ? ` · with ${experience.host.name}` : ""}
+        </Meta>
+        {tags.length > 0 && (
+          <Tags aria-label="Details">
+            {tags.map((tag) => (
+              <li key={tag}>{tag}</li>
+            ))}
+          </Tags>
+        )}
+        <Bottom>
+          <Rating rating={experience.rating} count={experience.ratingCount} />
+          <Price>
+            <strong>{formatPrice(experience.price)}</strong> / person
+          </Price>
+        </Bottom>
+      </Body>
     </Card>
   );
 }
 
-export default memo(ExperienceCardComponent);
-
+export default memo(ExperienceCard);

@@ -1,75 +1,67 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
-import type { JWT } from "next-auth/jwt";
 import Google from "next-auth/providers/google";
-import prisma from "@/lib/prisma";
+import { api, service } from "@/lib/api/server";
+import type { Role } from "@/types/experience";
 
-function requireEnv(value: string | undefined, key: string) {
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-  return value;
-}
+/**
+ * Google sign-in with JWT sessions. There is no database here: on sign-in the
+ * user is synced to locals-only-api, which owns the user record and role.
+ * The role in the session is refreshed from the API every few minutes, so a
+ * promotion to HOST shows up without signing out. (The API never trusts the
+ * session's role anyway; it re-checks on every write.)
+ */
 
-const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+const ROLE_REFRESH_MS = 5 * 60 * 1000;
+
+type ApiUser = { id: string; email: string; name: string | null; image: string | null; role: Role };
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma) as any,
-  secret: requireEnv(authSecret, "AUTH_SECRET or NEXTAUTH_SECRET"),
-  session: {
-    strategy: "jwt",
-  },
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  session: { strategy: "jwt" },
   providers: [
     Google({
-      clientId: requireEnv(process.env.GOOGLE_CLIENT_ID, "GOOGLE_CLIENT_ID"),
-      clientSecret: requireEnv(process.env.GOOGLE_CLIENT_SECRET, "GOOGLE_CLIENT_SECRET"),
+      clientId: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET,
     }),
   ],
   callbacks: {
-    jwt: async ({ token, user }) => {
-      const tokenWithRole = token as TokenWithRole;
-
-      if (user) {
-        tokenWithRole.role = (user as { role?: UserRole }).role ?? tokenWithRole.role ?? "CLIENT";
-        tokenWithRole.name = user.name ?? tokenWithRole.name;
-      }
-
-      if (!tokenWithRole.role && token.sub) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: { role: true, name: true },
+    async jwt({ token, user, account }) {
+      if (account && user?.email) {
+        const synced = await api<ApiUser>("/users/sync", {
+          method: "POST",
+          caller: service,
+          body: { email: user.email, name: user.name ?? null, image: user.image ?? null },
         });
-
-        if (dbUser) {
-          tokenWithRole.role = dbUser.role;
-          tokenWithRole.name = dbUser.name ?? tokenWithRole.name;
-        }
+        token.uid = synced.id;
+        token.role = synced.role;
+        token.roleCheckedAt = Date.now();
+        return token;
       }
 
-      return tokenWithRole;
+      if (token.uid && Date.now() - (token.roleCheckedAt ?? 0) > ROLE_REFRESH_MS) {
+        try {
+          const fresh = await api<ApiUser>(`/users/${encodeURIComponent(token.uid)}`, { caller: service });
+          token.role = fresh.role;
+          token.name = fresh.name ?? token.name;
+        } catch {
+          // API unreachable: keep the previous role; the API enforces it anyway.
+        }
+        token.roleCheckedAt = Date.now();
+      }
+      return token;
     },
-    session: async ({ session, token }) => {
+    async session({ session, token }) {
       if (session.user) {
-        const tokenWithRole = token as TokenWithRole;
-        session.user.id = token.sub ?? session.user.id ?? "";
-        session.user.role = tokenWithRole.role ?? "CLIENT";
-        session.user.name = tokenWithRole.name ?? session.user.name;
+        session.user.id = token.uid ?? "";
+        session.user.role = token.role ?? "CLIENT";
       }
       return session;
     },
   },
 });
 
-export async function getHostSession() {
+/** The signed-in user's API id, or null. */
+export async function currentUser() {
   const session = await auth();
-
-  if (!session?.user || session.user.role !== "HOST") {
-    return null;
-  }
-
-  return session;
+  return session?.user?.id ? session.user : null;
 }
-
-type UserRole = "CLIENT" | "HOST";
-type TokenWithRole = JWT & { role?: UserRole; name?: string | null };
-

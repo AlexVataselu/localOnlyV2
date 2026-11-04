@@ -1,154 +1,112 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import ExperienceCard, { CARD_IMAGE_RATIO } from "./ExperienceCard";
-import { Experience } from "@/types/experience";
+import type { Experience } from "@/types/experience";
 
-const GRID_GAP_PX = 32; // matches 2rem gap from previous grid
-const INFO_HEIGHT_ESTIMATE = 160; // heuristic for text block height
+const GAP = 32;
+const BODY_ESTIMATE = 170; // text block under the image
+const VIRTUALIZE_AFTER_ROWS = 8;
 
-const GridContainer = styled.div`
+const Container = styled.div`
   position: relative;
   width: 100%;
 `;
 
-const VirtualRow = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-`;
-
-const RowGrid = styled.div<{ $columns: number }>`
+const RowGrid = styled.ul<{ $columns: number }>`
   display: grid;
-  width: 100%;
-  gap: ${GRID_GAP_PX}px;
   grid-template-columns: repeat(${({ $columns }) => $columns}, minmax(0, 1fr));
-  padding-bottom: ${GRID_GAP_PX}px;
+  gap: ${GAP}px;
+  margin: 0;
+  padding: 0 0 ${GAP}px;
+  list-style: none;
 `;
 
-const SimpleGrid = styled.div<{ $columns: number }>`
-  display: grid;
-  width: 100%;
-  gap: ${GRID_GAP_PX}px;
-  grid-template-columns: repeat(${({ $columns }) => $columns}, minmax(0, 1fr));
-`;
+function columnsFor(width: number) {
+  if (width >= 1080) return 3;
+  if (width >= 680) return 2;
+  return 1;
+}
 
-type ExperienceGridProps = {
-  experiences: Experience[];
-};
+/**
+ * Responsive grid. Long lists are virtualized by row against the window
+ * scroll; `scrollMargin` is the grid's distance from the top of the page so
+ * the virtualizer knows which rows are actually on screen.
+ */
+export default function ExperienceGrid({ experiences }: { experiences: Experience[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [layout, setLayout] = useState({ width: 0, offsetTop: 0 });
 
-export default function ExperienceGrid({ experiences }: ExperienceGridProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-
-  const columns = useMemo(() => {
-    if (containerWidth >= 1080) return 3;
-    if (containerWidth >= 720) return 2;
-    return 1;
-  }, [containerWidth]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = containerRef.current;
     if (!node) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      setContainerWidth(entry.contentRect.width);
-    });
-    resizeObserver.observe(node);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
+    const measure = () =>
+      setLayout({ width: node.clientWidth, offsetTop: node.getBoundingClientRect().top + window.scrollY });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    return () => ro.disconnect();
   }, []);
 
+  const columns = columnsFor(layout.width);
   const rows = useMemo(() => {
-    if (!experiences.length) {
-      return [];
-    }
-    const nextRows: Experience[][] = [];
-    for (let i = 0; i < experiences.length; i += columns) {
-      nextRows.push(experiences.slice(i, i + columns));
-    }
-    return nextRows;
+    const out: Experience[][] = [];
+    for (let i = 0; i < experiences.length; i += columns) out.push(experiences.slice(i, i + columns));
+    return out;
   }, [experiences, columns]);
 
-  const safeColumns = useMemo(() => Math.max(columns, 1), [columns]);
+  const cardWidth = layout.width ? (layout.width - GAP * (columns - 1)) / columns : 360;
+  const rowEstimate = cardWidth / CARD_IMAGE_RATIO + BODY_ESTIMATE + GAP;
+  const virtualize = layout.width > 0 && rows.length > VIRTUALIZE_AFTER_ROWS;
 
-  const estimatedRowHeight = useMemo(() => {
-    if (containerWidth === 0) {
-      return 320;
-    }
-    const totalGapWidth = GRID_GAP_PX * Math.max(safeColumns - 1, 0);
-    const cardWidth = (containerWidth - totalGapWidth) / safeColumns;
-    const imageHeight = cardWidth / CARD_IMAGE_RATIO;
-    return imageHeight + INFO_HEIGHT_ESTIMATE + GRID_GAP_PX;
-  }, [safeColumns, containerWidth]);
-
-  const shouldUseVirtualization =
-    rows.length > safeColumns * 2 && containerWidth > 0;
-
-  // Don't use scrollMargin - the container is already correctly positioned
-  // in the document flow, and using scrollMargin can cause layout shifts
-  const rowVirtualizer = useWindowVirtualizer({
+  const virtualizer = useWindowVirtualizer({
     count: rows.length,
-    estimateSize: () => estimatedRowHeight,
-    overscan: 4,
+    estimateSize: () => rowEstimate,
+    overscan: 3,
+    scrollMargin: layout.offsetTop,
+    enabled: virtualize,
   });
 
-  const virtualRows = rowVirtualizer.getVirtualItems();
-
-  if (!shouldUseVirtualization) {
+  if (!virtualize) {
     return (
-      <GridContainer ref={containerRef}>
-        <SimpleGrid $columns={safeColumns}>
-          {experiences.map((experience) => (
-            <ExperienceCard key={experience.id} experience={experience} />
+      <Container ref={containerRef}>
+        <RowGrid $columns={columns}>
+          {experiences.map((experience, i) => (
+            <li key={experience.id}>
+              <ExperienceCard experience={experience} priority={i < columns} />
+            </li>
           ))}
-        </SimpleGrid>
-      </GridContainer>
+        </RowGrid>
+      </Container>
     );
   }
 
   return (
-    <GridContainer ref={containerRef}>
-      <div
-        style={{
-          height: `${rowVirtualizer.getTotalSize()}px`,
-          width: "100%",
-          position: "relative",
-          contain: "layout style paint",
-        }}
-      >
-        {virtualRows.map((virtualRow) => {
-          const rowExperiences = rows[virtualRow.index] ?? [];
-
-          return (
-            <VirtualRow
-              key={virtualRow.key}
-              data-index={virtualRow.index}
-              ref={rowVirtualizer.measureElement}
-              style={{
-                transform: `translateY(${virtualRow.start}px)`,
-                willChange: "transform",
-              }}
-            >
-              <RowGrid $columns={safeColumns}>
-                {rowExperiences.map((experience) => (
-                  <ExperienceCard
-                    key={experience.id}
-                    experience={experience}
-                  />
-                ))}
-              </RowGrid>
-            </VirtualRow>
-          );
-        })}
-      </div>
-    </GridContainer>
+    <Container ref={containerRef} style={{ height: virtualizer.getTotalSize() }}>
+      {virtualizer.getVirtualItems().map((row) => (
+        <div
+          key={row.key}
+          data-index={row.index}
+          ref={virtualizer.measureElement}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            transform: `translateY(${row.start - virtualizer.options.scrollMargin}px)`,
+          }}
+        >
+          <RowGrid $columns={columns}>
+            {rows[row.index].map((experience) => (
+              <li key={experience.id}>
+                <ExperienceCard experience={experience} />
+              </li>
+            ))}
+          </RowGrid>
+        </div>
+      ))}
+    </Container>
   );
 }
-

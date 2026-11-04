@@ -1,155 +1,66 @@
-# Locals Only V2
+# Locals Only
 
-A full-stack Airbnb Experiences clone built with Next.js, React, TypeScript, Prisma, and Vercel Postgres.
+Experiences across Romania, hosted by the people who live there.
 
-## 🚀 Tech Stack
+This repo is the web app: Next.js 16 (App Router), React 19, styled-components, TanStack Query and NextAuth with Google sign-in. All data lives in [locals-only-api](https://github.com/AlexVataselu/locals-only-api), and this app has no database of its own.
 
-- **Frontend**: Next.js (App Router) + React + TypeScript + styled-components
-- **Backend**: Next.js API Routes
-- **Database**: Vercel Postgres (PostgreSQL)
-- **ORM**: Prisma
-- **State Management**: React Query (TanStack Query)
-- **HTTP Client**: Axios
-- **Auth**: NextAuth.js (Google OAuth 2.0)
-
-## 📋 Prerequisites
-
-- Node.js 18+ installed
-- PostgreSQL database (local or Vercel Postgres)
-- Yarn package manager (or npm)
-
-## 🛠️ Setup Instructions
-
-### 1. Install Dependencies
-
-```bash
-npm install
-# or
-yarn install
+```
+Browser ──▶ Next.js (this repo)
+              ├─ pages & server components ──┐
+              └─ /api/* relay routes ────────┤ Bearer <5-min HS256 JWT signed with API_JWT_SECRET>
+                                             ▼
+                                     locals-only-api ──▶ Postgres
 ```
 
-### 2. Configure Environment
+* **Sign-in.** NextAuth handles Google OAuth with JWT sessions. On first sign-in the user is synced to the API (`POST /users/sync`), and the API assigns the role.
+* **Browser calls.** The browser only calls same-origin `/api/*` routes. These relay to the API as the signed-in user (`src/lib/api/proxy.ts`). API credentials never reach the browser.
+* **Server components** call the API directly (`src/lib/api/server.ts`).
+* **Roles.** The API checks roles on every write. The session's role is refreshed from the API every 5 minutes, so a newly promoted host sees host controls without signing out.
 
-Create a `.env` file in the root directory:
+## Setup
 
-```bash
-DATABASE_URL="postgresql://user:password@localhost:5432/dbname?schema=public"
-AUTH_SECRET="generate-a-random-string" # or NEXTAUTH_SECRET for backwards compatibility
-GOOGLE_CLIENT_ID="your-google-oauth-client-id"
-GOOGLE_CLIENT_SECRET="your-google-oauth-client-secret"
-```
+1. Start the API first. Follow the README in locals-only-api; the database can be Vercel Postgres, so you don't need Postgres locally.
+2. Configure this app:
 
-For Vercel Postgres, use the connection string provided in your Vercel dashboard.
+   ```bash
+   cp .env.example .env.local   # fill in the values
+   yarn install
+   yarn dev                     # http://localhost:3000
+   ```
 
-> Tip: You can generate `NEXTAUTH_SECRET` with `openssl rand -base64 32`.
+   | Variable | Purpose |
+   |---|---|
+   | `AUTH_SECRET` | NextAuth secret (`openssl rand -base64 32`) |
+   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth app. Redirect URI: `http://localhost:3000/api/auth/callback/google` |
+   | `API_URL` | Base URL of locals-only-api, for example `http://localhost:4000` |
+   | `API_JWT_SECRET` | Must equal the API's `API_JWT_SECRET` |
+   | `HOST_CONTACT_EMAIL` | Optional. Shown to signed-in users who ask to become hosts |
 
-### 3. Set Up Google OAuth
+3. To become a host, sign in once, then in the API repo run `npm run user:role -- you@gmail.com HOST`.
 
-1. Visit [Google Cloud Console](https://console.cloud.google.com/).
-2. Create (or select) a project and enable **Google OAuth consent screen**.
-3. Create OAuth credentials for a **Web application**.
-4. Add `http://localhost:3000` as an authorized origin.
-5. Add `http://localhost:3000/api/auth/callback/google` as an authorized redirect URI.
-6. Copy the Client ID and Client Secret into `.env`.
+## Deploying to Vercel
 
-### 4. Initialize Prisma
+Deploy this repo and the API as **two Vercel projects**. On this one:
 
-```bash
-# Generate Prisma Client
-npm run db:generate
+* set the variables above, with `API_URL` pointing at the API deployment;
+* add the production callback URL to the Google OAuth app.
 
-# Push schema to database
-npm run db:push
+## Scripts
 
-# Seed the database
-npm run db:seed
-```
+`yarn dev`, `yarn build`, `yarn start`, `yarn lint`, `yarn typecheck`.
 
-### 4. Run Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 📁 Project Structure
+## Project structure
 
 ```
 src/
-  app/
-    api/
-      experiences/
-        route.ts         # GET + POST endpoints
-      experiences/[id]/
-        route.ts         # GET + PUT + DELETE endpoints
-    experiences/
-      page.tsx           # Experiences listing page
-      [id]/page.tsx      # Experience detail page
-  components/
-    ExperienceCard.tsx   # Reusable experience card component
-  hooks/
-    useExperiencesQuery.ts  # React Query hook for experiences
-  lib/
-    prisma.ts            # Prisma client singleton
-    apiClient.ts         # Axios client configuration
-  styles/
-    globalStyles.ts      # Global styled-components styles
-  types/
-    experience.ts        # TypeScript types
-  utils/
-    formatters.ts        # Utility functions
-
-prisma/
-  schema.prisma          # Prisma schema definition
-  seed.ts                # Database seed script
+  app/                      routes (home, /experiences, /experiences/[id], /new, /[id]/edit, /api relay)
+  components/               page sections and widgets
+    ui/                     shared building blocks: SiteHeader, Carousel, SectionHeading, Rating, Status, PageShell
+  hooks/                    TanStack Query hooks (experiences, hosts)
+  lib/api/                  server-side API client, /api relay, browser fetch helper
+  lib/auth.ts               NextAuth config (Google, API user sync)
+  styles/                   theme tokens (light + dark) and global styles
+  types/                    API types and the filter vocabulary (enum codes ↔ labels, URL serialisation)
 ```
 
-## 🎯 Features
-
-- ✅ List all experiences
-- ✅ View experience details
-- ✅ Create new experiences (API endpoint)
-- ✅ Update experiences (API endpoint)
-- ✅ Delete experiences (API endpoint)
-- ✅ Server-side rendering (SSR)
-- ✅ React Query for state management
-- ✅ Responsive design with styled-components
-- ✅ Type-safe with TypeScript
-- ✅ Google sign-in with host/client roles
-- ✅ Hosts-only experience upload flow
-
-## 👥 Roles
-
-- **Clients**: default role after Google sign-in; browse and book experiences.
-- **Hosts**: can upload, edit, and remove their own experiences.
-
-Mark a user as a host by updating their `role` column to `HOST` in the database (the seed script creates `host@example.com` as the default host).
-
-## 📝 API Endpoints
-
-- `GET /api/experiences` - Get all experiences
-- `POST /api/experiences` - Create a new experience
-- `GET /api/experiences/[id]` - Get a specific experience
-- `PUT /api/experiences/[id]` - Update an experience
-- `DELETE /api/experiences/[id]` - Delete an experience
-- `GET /api/auth/session` - Retrieve the active auth session (NextAuth)
-
-## 🚢 Deployment
-
-### Deploy to Vercel
-
-1. Push your code to GitHub
-2. Import your repository in Vercel
-3. Add your `DATABASE_URL` environment variable in Vercel dashboard
-4. Vercel will automatically deploy your app
-
-After deployment, run:
-```bash
-npm run db:push
-npm run db:seed
-```
-
-## 📄 License
-
-MIT
+Filters and search are kept in the URL (`/experiences?location=azuga&activityTypes=SPORTS`). That makes every result list shareable, and it survives refresh and Back.

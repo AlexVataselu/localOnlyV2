@@ -4,164 +4,148 @@ import { useState } from "react";
 import Image from "next/image";
 import styled from "styled-components";
 
-const CardWrap = styled.div`
-  perspective: 800px;
-  flex-shrink: 0;
-  width: 260px;
+const Wrap = styled.button`
+  display: block;
+  width: 100%;
   height: 320px;
+  padding: 0;
+  border: none;
+  background: none;
+  perspective: 900px;
+  cursor: pointer;
+  text-align: inherit;
+  color: inherit;
+  border-radius: 24px;
 `;
 
-const CardInner = styled.div<{ $flipped: boolean }>`
+const Inner = styled.div<{ $flipped: boolean }>`
   position: relative;
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transform: rotateY(${({ $flipped }) => ($flipped ? "180deg" : "0deg")});
-  transition: transform 0.5s ease;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: transform 0.5s ease;
+    transform: rotateY(${({ $flipped }) => ($flipped ? "180deg" : "0deg")});
+  }
 `;
 
-const Face = styled.div`
+const Face = styled.div<{ $back?: boolean; $flipped: boolean }>`
   position: absolute;
   inset: 0;
-  backface-visibility: hidden;
-  border-radius: 28px;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  /* glassmorphism */
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.colors.glassBorder};
+  background: ${({ theme }) => theme.colors.surfaceRaised};
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: ${({ $back }) => ($back ? "rotateY(180deg)" : "none")};
+  }
+
+  /* Without motion, swap faces instead of rotating. */
+  @media (prefers-reduced-motion: reduce) {
+    visibility: ${({ $back, $flipped }) => ($back === $flipped ? "visible" : "hidden")};
+  }
 `;
 
-const FaceFront = styled(Face)`
-  /* Face base has glass; TopBar/BottomBar overlay their own bg */
-`;
-
-const FaceBack = styled(Face)`
-  transform: rotateY(180deg);
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-`;
-
-const TopBar = styled.div<{ $complete: boolean }>`
+const Top = styled.div`
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.75rem 1rem;
-  background: ${({ $complete, theme }) => ($complete ? theme.colors.accent : "rgba(30, 32, 38, 0.9)")};
-  color: ${({ $complete, theme }) => ($complete ? theme.colors.onAccent : "#fff")};
-`;
-
-const Icon = styled.div`
-  font-size: 1.5rem;
-  line-height: 1;
-  flex-shrink: 0;
-`;
-
-const TopTitle = styled.span`
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  padding: 0.85rem 1rem;
+  background: ${({ theme }) => theme.colors.surface};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  font-size: 0.85rem;
+  font-weight: 800;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  span[aria-hidden] {
+    font-size: 1.4rem;
+    letter-spacing: 0;
+  }
 `;
 
 const Middle = styled.div`
   flex: 1;
-  min-height: 100px;
-  padding: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1.25rem;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-const Desc = styled.p`
-  margin: 0;
+const Hint = styled.div`
+  padding: 0.7rem 1rem;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.onAccent};
   font-size: 0.75rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.9);
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-align: center;
+  text-transform: uppercase;
 `;
 
 const BadgeImage = styled.div`
   position: relative;
-  width: 140px;
-  height: 140px;
-  flex-shrink: 0;
+  width: 150px;
+  height: 150px;
 `;
 
-const BottomBar = styled.div<{ $complete: boolean }>`
-  padding: 0.6rem 1rem;
-  font-size: 0.7rem;
-  font-weight: 700;
+const BackTitle = styled.p`
+  margin: 0;
+  padding: 0 1rem 1.25rem;
+  text-align: center;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  text-align: center;
-  background: ${({ $complete, theme }) => ($complete ? theme.colors.accent : "rgba(255, 255, 255, 0.95)")};
-  color: #1f1f1f;
-`;
-
-const BackTitle = styled.span`
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: ${({ theme }) => theme.colors.textPrimary};
-  margin-top: 1rem;
-  text-align: center;
 `;
 
 export interface ChallengeBadgeCardProps {
   title: string;
   description: string;
   icon: string;
-  complete: boolean;
   badgeSrc?: string;
 }
 
-export default function ChallengeBadgeCard({
-  title,
-  description,
-  icon,
-  complete,
-  badgeSrc = "/badge.png",
-}: ChallengeBadgeCardProps) {
+export default function ChallengeBadgeCard({ title, description, icon, badgeSrc = "/badge.png" }: ChallengeBadgeCardProps) {
   const [flipped, setFlipped] = useState(false);
 
   return (
-    <CardWrap
-      onMouseEnter={() => setFlipped(true)}
-      onMouseLeave={() => setFlipped(false)}
+    <Wrap
+      type="button"
+      aria-pressed={flipped}
+      aria-label={`${title} badge: ${description}. ${flipped ? "Showing badge." : "Show badge."}`}
+      onClick={() => setFlipped((v) => !v)}
+      onPointerEnter={(e) => e.pointerType === "mouse" && setFlipped(true)}
+      onPointerLeave={(e) => e.pointerType === "mouse" && setFlipped(false)}
     >
-      <CardInner $flipped={flipped}>
-        <FaceFront>
-          <TopBar $complete={complete}>
-            <Icon>{icon}</Icon>
-            <TopTitle>{title}</TopTitle>
-          </TopBar>
+      <Inner $flipped={flipped} aria-hidden>
+        <Face $flipped={flipped}>
+          <Top>
+            <span aria-hidden>{icon}</span>
+            {title}
+          </Top>
+          <Middle>{description}</Middle>
+          <Hint>Tap to see the badge</Hint>
+        </Face>
+        <Face $back $flipped={flipped}>
           <Middle>
-            {complete ? (
-              <BadgeImage>
-                <Image src={badgeSrc} alt={title} fill style={{ objectFit: "contain" }} />
-              </BadgeImage>
-            ) : (
-              <Desc>{description}</Desc>
-            )}
+            <BadgeImage>
+              <Image src={badgeSrc} alt="" fill sizes="150px" style={{ objectFit: "contain" }} />
+            </BadgeImage>
           </Middle>
-          <BottomBar $complete={complete}>
-            {complete ? "BADGE COMPLETED" : "BADGE INCOMPLETE"}
-          </BottomBar>
-        </FaceFront>
-        <FaceBack>
-          <BadgeImage>
-            <Image src={badgeSrc} alt={title} fill style={{ objectFit: "contain" }} />
-          </BadgeImage>
           <BackTitle>{title}</BackTitle>
-        </FaceBack>
-      </CardInner>
-    </CardWrap>
+        </Face>
+      </Inner>
+    </Wrap>
   );
 }

@@ -1,16 +1,8 @@
-export const formatPrice = (price: number): string => {
-  return `$${price.toFixed(2)}`;
-};
+const lei = new Intl.NumberFormat("ro-RO", { maximumFractionDigits: 0 });
 
-export const formatRating = (rating: number): string => {
-  return rating.toFixed(1);
-};
+/** Prices are whole lei: 1650 -> "1.650 lei". */
+export const formatPrice = (price: number): string => `${lei.format(price)} lei`;
 
-export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
-};
+export const formatRating = (rating: number): string => rating.toFixed(1);
 
+export const pluralize = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
