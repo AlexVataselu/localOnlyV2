@@ -111,8 +111,18 @@ const Copy = styled.div`
   padding: calc(58svh - 7rem) ${GUTTER} 0;
 
   ${DESKTOP} {
+    padding: 3rem 0 0;
+  }
+`;
+
+/** The line, heading and actions, centred in the space above the guide row. */
+const Lead = styled.div`
+  display: flex;
+  flex-direction: column;
+
+  ${DESKTOP} {
+    flex: 1;
     justify-content: center;
-    padding: 3rem 0 6rem;
   }
 `;
 
@@ -191,53 +201,66 @@ const Secondary = styled(Link)`
 `;
 
 /** Pick a guide: each button shows the mascot and its name. */
+/** The cast: five equal tiles, portrait over name; the row's foot lines up with the badge cards' foot. */
 const Picker = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.5rem;
-  margin: 2.5rem calc(-1 * ${GUTTER}) 0;
-  padding: 0 ${GUTTER} 0.25rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  margin-top: 2.5rem;
 
   ${DESKTOP} {
-    flex-wrap: wrap;
-    margin: 3rem 0 0;
-    padding: 0;
-    overflow: visible;
+    max-width: 460px;
+    gap: 0.75rem;
+    margin: 2rem 0 1.25rem;
   }
 `;
 
 const Guide = styled.button<{ $active: boolean }>`
-  flex: none;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  min-height: 44px;
-  padding: 0.25rem 0.9rem 0.25rem 0.25rem;
-  border-radius: 999px;
-  border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.accent : "rgba(255, 255, 255, 0.28)")};
-  background: ${({ $active }) => ($active ? "rgba(226, 165, 6, 0.18)" : "rgba(0, 0, 0, 0.3)")};
-  color: #fff;
+  min-width: 0;
+  padding: 0.25rem 0;
+  border: none;
+  background: none;
+  color: ${({ $active, theme }) => ($active ? theme.colors.accent : "rgba(255, 255, 255, 0.85)")};
   font: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: ${({ $active }) => ($active ? 700 : 600)};
   cursor: pointer;
 
-  @media (prefers-reduced-motion: no-preference) {
-    transition: background 0.2s, border-color 0.2s;
-  }
+  span {
+    position: relative;
+    display: block;
+    width: min(100%, 64px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    /* The active guide gets the accent ring; the rest sit back a little. */
+    box-shadow: 0 0 0 2px ${INK}, 0 0 0 ${({ $active }) => ($active ? "4px" : "3px")} ${({ $active, theme }) => ($active ? theme.colors.accent : "rgba(255, 255, 255, 0.25)")};
+    opacity: ${({ $active }) => ($active ? 1 : 0.72)};
 
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.accent};
+    @media (prefers-reduced-motion: no-preference) {
+      transition: opacity 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+    }
   }
 
   img {
-    border-radius: 50%;
     object-fit: cover;
+  }
+
+  &:hover span {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible span {
+    box-shadow: 0 0 0 2px ${INK}, 0 0 0 5px #fff;
   }
 `;
 
@@ -276,6 +299,7 @@ export default function HeroSection() {
       <Scrim />
 
       <Copy>
+        <Lead>
         <Display className={roboto.className} aria-live="polite">
           <span>{slide.titleMain}</span>
           <span>{slide.titleSub}</span>
@@ -285,10 +309,13 @@ export default function HeroSection() {
           <Primary href="/experiences">Browse experiences</Primary>
           <Secondary href="/experiences/new">Host an experience</Secondary>
         </Actions>
+        </Lead>
         <Picker role="group" aria-label="Choose a guide">
           {HERO_SLIDES.map((s, i) => (
             <Guide key={s.image} type="button" $active={i === index} aria-pressed={i === index} onClick={() => setIndex(i)}>
-              <Image src={s.image} alt="" width={36} height={36} />
+              <span>
+                <Image src={s.image} alt="" fill sizes="64px" />
+              </span>
               {NAMES[s.image] ?? `Guide ${i + 1}`}
             </Guide>
           ))}
