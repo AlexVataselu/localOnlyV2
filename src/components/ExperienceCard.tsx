@@ -52,11 +52,17 @@ const TopSection = styled.div`
   gap: 0.5rem;
 `;
 
+/* Always two lines tall, so titles of any length keep cards in line. */
 const Title = styled.h3`
   margin: 0;
   font-size: 1.2rem;
   font-weight: 600;
   line-height: 1.3;
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 `;
 
 const TagsContainer = styled.div`

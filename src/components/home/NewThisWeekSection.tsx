@@ -123,9 +123,15 @@ const List = styled.div<{ $offset: number }>`
   transition: transform 0.35s ease;
 `;
 
+/* Stretch every card to the tallest one in the row so they line up. */
 const CardSlot = styled.div`
   flex: 0 0 380px;
   min-width: 0;
+  display: flex;
+
+  & > * {
+    flex: 1;
+  }
 
   @media (max-width: 900px) {
     flex: 0 0 300px;

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Roboto } from "next/font/google";
 import styled from "styled-components";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import ChallengeBadgesSlider from "./ChallengeBadgesSlider";
 import { HERO_SLIDES } from "./heroSlideData";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["900"] });
@@ -23,8 +24,8 @@ const INK = "#0f1116";
 
 const Hero = styled.section`
   position: relative;
-  min-height: min(100svh, 960px);
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   color: #fff;
   background: ${INK} url("/topo.jpg") center / cover no-repeat;
@@ -62,25 +63,34 @@ const Slide = styled.div<{ $active: boolean }>`
 
 const Shade = styled.div`
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto 0;
+  height: min(100svh, 760px);
   background: linear-gradient(
     to bottom,
     rgba(15, 17, 22, 0.45) 0%,
-    rgba(15, 17, 22, 0.05) 22%,
-    rgba(15, 17, 22, 0.85) 55%,
-    ${INK} 72%
+    rgba(15, 17, 22, 0.05) 25%,
+    rgba(15, 17, 22, 0.8) 62%,
+    ${INK} 100%
   );
 
   ${DESKTOP} {
+    inset: 0;
+    height: auto;
     background:
       linear-gradient(90deg, ${INK} 39%, rgba(15, 17, 22, 0.7) 49%, rgba(15, 17, 22, 0) 68%),
-      linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 0.45) 100%);
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 45%, rgba(15, 17, 22, 0.7) 100%);
   }
+`;
+
+/** The copy and the portrait's visible area; the guide controls sit at its foot. */
+const Stage = styled.div`
+  position: relative;
+  z-index: 1;
+  width: 100%;
 `;
 
 const Content = styled.div`
   position: relative;
-  z-index: 1;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -89,8 +99,9 @@ const Content = styled.div`
 
   ${DESKTOP} {
     justify-content: center;
+    min-height: min(62svh, 600px);
     max-width: calc(min(46%, 660px) + ${GUTTER});
-    padding: 3.5rem 0 3.5rem ${GUTTER};
+    padding: 4rem 0 5.5rem ${GUTTER};
   }
 `;
 
@@ -157,99 +168,12 @@ const Secondary = styled(Link)`
   }
 `;
 
-const Badges = styled.section`
-  margin-top: 2.5rem;
-`;
-
-const BadgesTitle = styled.h2`
-  margin: 0 0 0.75rem;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.3;
-`;
-
-/* Mobile: one swipeable row. Desktop: a 3 × 2 grid that fits the column. */
-const BadgeList = styled.ul`
-  list-style: none;
-  margin: 0 calc(-1 * ${GUTTER});
-  padding: 0.25rem ${GUTTER} 0.5rem;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(210px, 62%);
-  gap: 0.75rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: ${GUTTER};
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  ${DESKTOP} {
-    margin: 0;
-    padding: 0;
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    overflow: visible;
-  }
-`;
-
-const Badge = styled.li`
-  scroll-snap-align: start;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 0.6rem;
-  row-gap: 0.25rem;
-  align-content: start;
-  padding: 0.85rem 0.9rem;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  @media (prefers-reduced-motion: no-preference) {
-    transition: border-color 0.2s, background 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  &:hover {
-    transform: translateY(-2px);
-    border-color: ${({ theme }) => theme.colors.accent};
-    background: rgba(255, 255, 255, 0.1);
-  }
-`;
-
-const BadgeIcon = styled.span`
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 10px;
-  background: rgba(226, 165, 6, 0.16);
-  font-size: 1.2rem;
-  line-height: 1;
-`;
-
-const BadgeName = styled.h3`
-  margin: 0;
-  align-self: center;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.25;
-`;
-
-const BadgeDesc = styled.p`
-  grid-column: 1 / -1;
-  margin: 0.15rem 0 0;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.78);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+/** The approved badge slider, across the bottom of the hero. */
+const BadgesWrap = styled.div`
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 0 ${GUTTER} 1rem;
 `;
 
 const Controls = styled.div`
@@ -330,6 +254,7 @@ export default function HeroSection() {
       ))}
       <Shade />
 
+      <Stage>
       <Content>
         <Display className={roboto.className} aria-live="polite">
           <span>{slide.titleMain}</span>
@@ -343,21 +268,6 @@ export default function HeroSection() {
           <Secondary href="/experiences/new">Host an experience</Secondary>
         </Actions>
 
-        <Badges aria-labelledby="hero-badges-title">
-          <BadgesTitle id="hero-badges-title">
-            {slide.badgeSectionTitle}
-          </BadgesTitle>
-          {/* Focusable so keyboard users can scroll the row on mobile. */}
-          <BadgeList key={slide.image} tabIndex={0} aria-labelledby="hero-badges-title">
-            {slide.challenges.map((c) => (
-              <Badge key={c.id}>
-                <BadgeIcon aria-hidden="true">{c.icon}</BadgeIcon>
-                <BadgeName>{c.title}</BadgeName>
-                <BadgeDesc>{c.description}</BadgeDesc>
-              </Badge>
-            ))}
-          </BadgeList>
-        </Badges>
       </Content>
 
       <Controls role="group" aria-label="Choose a guide">
@@ -378,6 +288,11 @@ export default function HeroSection() {
           <ChevronRight size={22} aria-hidden />
         </ArrowButton>
       </Controls>
+      </Stage>
+
+      <BadgesWrap>
+        <ChallengeBadgesSlider key={index} challenges={slide.challenges} title={slide.badgeSectionTitle} />
+      </BadgesWrap>
     </Hero>
   );
 }
