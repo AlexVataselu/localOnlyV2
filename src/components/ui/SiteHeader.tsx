@@ -12,19 +12,21 @@ import AccountMenu from "./AccountMenu";
 
 export const HEADER_HEIGHT = 76;
 
+/** Keyboard-only shortcut past the header: invisible until focused with Tab. */
 const SkipLink = styled.a`
-  position: absolute;
+  position: fixed;
   left: 1rem;
-  top: -100px;
+  top: 0.75rem;
   z-index: 2000;
+  transform: translateY(-200%);
   padding: 0.75rem 1rem;
   border-radius: 8px;
   background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.onAccent};
   font-weight: 700;
 
-  &:focus {
-    top: 0.75rem;
+  &:focus-visible {
+    transform: none;
   }
 `;
 
@@ -47,6 +49,10 @@ const Row = styled.div`
   gap: 1rem;
   padding: 0.75rem clamp(16px, 5vw, 80px);
 
+  @media (max-width: 480px) {
+    gap: 0.5rem;
+  }
+
   @media (max-width: 900px) {
     flex-wrap: wrap;
   }
@@ -57,6 +63,23 @@ const Brand = styled(Link)`
   align-items: center;
   flex-shrink: 0;
   border-radius: 8px;
+
+  img {
+    width: 105px;
+    height: auto;
+  }
+
+  @media (max-width: 480px) {
+    img {
+      width: 84px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    img {
+      width: 72px;
+    }
+  }
 `;
 
 const Nav = styled.nav`
@@ -79,6 +102,11 @@ const NavLink = styled(Link)<{ $active: boolean }>`
 
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  @media (max-width: 480px) {
+    padding: 0 0.4rem;
+    font-size: 0.95rem;
   }
 `;
 
@@ -157,7 +185,7 @@ export default function SiteHeader({ overlay = false, middle, below }: SiteHeade
       <Bar $overlay={overlay}>
         <Row>
           <Brand href="/" aria-label="Locals Only home">
-            <Image src="/localsOnlyLogoV4.7Tryangle.png" alt="" width={56} height={56} priority />
+            <Image src="/logo-locals-only.png" alt="" width={105} height={44} priority />
           </Brand>
           <Nav aria-label="Main">
             <NavLink href="/experiences" $active={pathname.startsWith("/experiences") && pathname !== "/experiences/new"}>

@@ -7,6 +7,7 @@ import Carousel from "@/components/ui/Carousel";
 import Rating from "@/components/ui/Rating";
 import { ErrorState, Skeleton } from "@/components/ui/Status";
 import { useHostsQuery } from "@/hooks/useHostsQuery";
+import { mascotFor, portraitFor } from "@/lib/mascots";
 import { formatPrice, pluralize } from "@/utils/formatters";
 
 const Card = styled.article`
@@ -29,11 +30,12 @@ const Card = styled.article`
 
 const Photo = styled.div`
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1;
   background: ${({ theme }) => theme.colors.surface};
 
   img {
     object-fit: cover;
+    object-position: 50% 20%;
   }
 `;
 
@@ -63,13 +65,26 @@ const Name = styled.h3`
   }
 `;
 
+const Persona = styled.p`
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.accentText};
+`;
+
 const Where = styled.p`
   margin: 0;
   font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.accentText};
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const NameRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
 `;
 
 const Bio = styled.p`
@@ -128,24 +143,27 @@ export default function LocalGuidesSection() {
       fallback={fallback}
     >
       {(hosts ?? []).map((host) => {
-        const photo = host.image ?? host.coverImage;
+        const mascot = mascotFor(host);
         return (
           <Card key={host.id}>
-            <Photo>{photo && <Image src={photo} alt="" fill sizes="260px" />}</Photo>
+            <Photo>
+              <Image src={portraitFor(host)} alt="" fill sizes="260px" />
+            </Photo>
             <Body>
-              <Name>
-                <Link href={`/experiences?hostId=${encodeURIComponent(host.id)}`}>{host.name ?? "Local host"}</Link>
-              </Name>
+              <NameRow>
+                <Name>
+                  <Link href={`/experiences?hostId=${encodeURIComponent(host.id)}`}>{host.name ?? "Local host"}</Link>
+                </Name>
+                <Rating rating={host.rating} count={host.ratingCount} />
+              </NameRow>
+              <Persona>{mascot.name}</Persona>
               {host.locations[0] && <Where>{host.locations[0]}</Where>}
               {host.bio && <Bio>{host.bio}</Bio>}
               <Row>
-                <Rating rating={host.rating} count={host.ratingCount} />
+                <span>{pluralize(host.experienceCount, "experience", "experiences")}</span>
                 <span>
                   from <strong>{formatPrice(host.fromPrice)}</strong>
                 </span>
-              </Row>
-              <Row>
-                <span>{pluralize(host.experienceCount, "experience", "experiences")}</span>
               </Row>
             </Body>
           </Card>

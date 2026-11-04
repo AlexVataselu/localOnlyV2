@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import BecomeHost from "@/components/BecomeHost";
 import ExperienceForm from "@/components/ExperienceForm";
+import HostLanding from "@/components/HostLanding";
 import PageShell from "@/components/ui/PageShell";
 import { auth } from "@/lib/auth";
 
@@ -10,7 +10,13 @@ export const metadata: Metadata = { title: "Add an experience" };
 
 export default async function NewExperiencePage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/api/auth/signin?callbackUrl=/experiences/new");
+  if (!session?.user?.id) {
+    return (
+      <PageShell title="Host an experience">
+        <HostLanding />
+      </PageShell>
+    );
+  }
 
   if (session.user.role !== "HOST") {
     return (

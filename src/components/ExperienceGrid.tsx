@@ -75,7 +75,7 @@ export default function ExperienceGrid({ experiences }: { experiences: Experienc
         <RowGrid $columns={columns}>
           {experiences.map((experience, i) => (
             <li key={experience.id}>
-              <ExperienceCard experience={experience} priority={i < columns} />
+              <ExperienceCard experience={experience} priority={i < columns} headingLevel="h2" />
             </li>
           ))}
         </RowGrid>
@@ -101,7 +101,7 @@ export default function ExperienceGrid({ experiences }: { experiences: Experienc
           <RowGrid $columns={columns}>
             {rows[row.index].map((experience) => (
               <li key={experience.id}>
-                <ExperienceCard experience={experience} />
+                <ExperienceCard experience={experience} headingLevel="h2" />
               </li>
             ))}
           </RowGrid>

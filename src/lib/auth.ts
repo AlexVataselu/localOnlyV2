@@ -17,6 +17,9 @@ type ApiUser = { id: string; email: string; name: string | null; image: string |
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  // Build OAuth callback URLs from the incoming request's host, so every
+  // Vercel deployment (preview or production) calls back to itself.
+  trustHost: true,
   session: { strategy: "jwt" },
   providers: [
     Google({

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import styled from "styled-components";
+import type { LucideIcon } from "lucide-react";
 
 const Wrap = styled.button`
   display: block;
@@ -66,9 +67,9 @@ const Top = styled.div`
   text-transform: uppercase;
   color: ${({ theme }) => theme.colors.textPrimary};
 
-  span[aria-hidden] {
-    font-size: 1.4rem;
-    letter-spacing: 0;
+  svg {
+    flex-shrink: 0;
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -112,11 +113,11 @@ const BackTitle = styled.p`
 export interface ChallengeBadgeCardProps {
   title: string;
   description: string;
-  icon: string;
+  icon: LucideIcon;
   badgeSrc?: string;
 }
 
-export default function ChallengeBadgeCard({ title, description, icon, badgeSrc = "/badge.png" }: ChallengeBadgeCardProps) {
+export default function ChallengeBadgeCard({ title, description, icon: Icon, badgeSrc = "/badge.png" }: ChallengeBadgeCardProps) {
   const [flipped, setFlipped] = useState(false);
 
   return (
@@ -131,7 +132,7 @@ export default function ChallengeBadgeCard({ title, description, icon, badgeSrc 
       <Inner $flipped={flipped} aria-hidden>
         <Face $flipped={flipped}>
           <Top>
-            <span aria-hidden>{icon}</span>
+            <Icon size={22} aria-hidden />
             {title}
           </Top>
           <Middle>{description}</Middle>

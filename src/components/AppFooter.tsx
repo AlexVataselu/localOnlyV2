@@ -83,7 +83,7 @@ export default function AppFooter() {
           </Links>
         </nav>
         <Link href="/" aria-label="Locals Only home">
-          <Image src="/localsOnlyLogoV4.7Tryangle.png" alt="" width={110} height={110} />
+          <Image src="/logo-locals-only.png" alt="" width={181} height={76} />
         </Link>
       </Top>
       <Bottom>© {new Date().getFullYear()} Locals Only</Bottom>

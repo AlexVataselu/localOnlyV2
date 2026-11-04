@@ -47,7 +47,7 @@ export default function Rating({
 }) {
   if (rating === null || count === 0) return <NewBadge>New</NewBadge>;
   return (
-    <Wrap $size={size} aria-label={`Rated ${formatRating(rating)} out of 5 from ${count} reviews`}>
+    <Wrap $size={size} role="img" aria-label={`Rated ${formatRating(rating)} out of 5 from ${count} reviews`}>
       <Star size={size === "md" ? 18 : 15} fill="currentColor" aria-hidden />
       <strong aria-hidden>{formatRating(rating)}</strong>
       <span aria-hidden>({count})</span>

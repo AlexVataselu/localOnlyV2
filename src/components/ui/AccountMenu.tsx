@@ -38,6 +38,10 @@ const Pill = styled.button`
     opacity: 0.6;
     cursor: progress;
   }
+
+  @media (max-width: 480px) {
+    padding: 0 0.85rem;
+  }
 `;
 
 const Avatar = styled(Pill)`

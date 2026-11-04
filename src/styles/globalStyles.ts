@@ -35,6 +35,20 @@ export const GlobalStyle = createGlobalStyle`
 
   a {
     color: inherit;
+    text-underline-offset: 3px;
+  }
+
+  ::selection {
+    background: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.onAccent};
+  }
+
+  input, textarea {
+    caret-color: ${({ theme }) => theme.colors.accent};
+  }
+
+  html {
+    scrollbar-color: ${({ theme }) => `${theme.colors.border} ${theme.colors.background}`};
   }
 
   img {

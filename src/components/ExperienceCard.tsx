@@ -126,7 +126,16 @@ const Price = styled.p`
   }
 `;
 
-function ExperienceCard({ experience, priority = false }: { experience: Experience; priority?: boolean }) {
+function ExperienceCard({
+  experience,
+  priority = false,
+  headingLevel = "h3",
+}: {
+  experience: Experience;
+  priority?: boolean;
+  /** h2 when the card sits directly under the page's h1 (listing page), h3 under a section heading. */
+  headingLevel?: "h2" | "h3";
+}) {
   const tags = [
     ...experience.activityTypes.slice(0, 2).map((t) => ACTIVITY_TYPE_LABELS[t]),
     ...(experience.duration ? [DURATION_LABELS[experience.duration]] : []),
@@ -145,7 +154,7 @@ function ExperienceCard({ experience, priority = false }: { experience: Experien
         />
       </ImageWrapper>
       <Body>
-        <Title>
+        <Title as={headingLevel}>
           <CardLink href={`/experiences/${experience.id}`}>{experience.title}</CardLink>
         </Title>
         <Meta>

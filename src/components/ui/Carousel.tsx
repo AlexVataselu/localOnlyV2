@@ -80,6 +80,8 @@ interface CarouselProps {
   itemWidth?: string;
   /** Rendered instead of the list (loading, error, empty). */
   fallback?: ReactNode;
+  /** Drop the page gutters when the carousel sits inside an already padded layout. */
+  flush?: boolean;
   children?: ReactNode;
 }
 
@@ -91,6 +93,7 @@ export default function Carousel({
   label,
   itemWidth = "min(320px, 82vw)",
   fallback,
+  flush = false,
   children,
 }: CarouselProps) {
   const listRef = useRef<HTMLUListElement>(null);
@@ -123,7 +126,7 @@ export default function Carousel({
   const scrollable = !fallback && !(edges.start && edges.end);
 
   return (
-    <Section aria-labelledby={headingId}>
+    <Section aria-labelledby={headingId} style={flush ? { paddingInline: 0 } : undefined}>
       <SectionHeading
         id={headingId}
         title={title}

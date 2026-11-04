@@ -69,7 +69,10 @@ const CARDS = [
 
 export default function FeatureCards() {
   return (
-    <Section aria-label="Why Locals Only">
+    <Section aria-labelledby="why-title">
+      <h2 id="why-title" className="visually-hidden">
+        Why Locals Only
+      </h2>
       <Grid>
         {CARDS.map((c) => (
           <Card key={c.title}>

@@ -9,12 +9,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import SearchBar, { type SearchValues } from "@/components/SearchBar";
 import { HEADER_HEIGHT } from "@/components/ui/SiteHeader";
 
+/** `focus` is the object-position that keeps each mascot's face in frame on wide screens. */
 const SLIDES = [
-  { image: "/bear.png", top: "The bear", bottom: "necessities" },
-  { image: "/fox.png", top: "The fox's", bottom: "den" },
-  { image: "/lynx.png", top: "The lynx's", bottom: "trail" },
-  { image: "/wolf.png", top: "The wolf", bottom: "pack" },
-  { image: "/dog.png", top: "The dog's", bottom: "journey" },
+  { image: "/bear.png", top: "The bear", bottom: "necessities", focus: "40% 18%" },
+  { image: "/fox.png", top: "The fox's", bottom: "den", focus: "50% 18%" },
+  { image: "/lynx.png", top: "The lynx's", bottom: "trail", focus: "50% 15%" },
+  { image: "/wolf.png", top: "The wolf", bottom: "pack", focus: "55% 18%" },
+  { image: "/dog.png", top: "The dog's", bottom: "journey", focus: "50% 15%" },
 ];
 
 const Hero = styled.section`
@@ -24,8 +25,13 @@ const Hero = styled.section`
   overflow: hidden;
   /* Photography stays dark in both themes, so the hero uses on-image tokens. */
   color: ${({ theme }) => theme.colors.onImage};
-  background: #0f1116;
+  background: #0f1116 url("/topo.jpg") center / cover no-repeat;
+  background-blend-mode: soft-light;
 `;
+
+/* Desktop: the square portrait sits in the right ~62% (barely cropped) and
+   fades into the topo texture where the copy lives. Mobile: full bleed. */
+const DESKTOP = "@media (min-width: 960px)";
 
 const Slide = styled.div<{ $active: boolean }>`
   position: absolute;
@@ -39,13 +45,22 @@ const Slide = styled.div<{ $active: boolean }>`
   img {
     object-fit: cover;
   }
+
+  ${DESKTOP} {
+    left: 38%;
+  }
 `;
 
 const Shade = styled.div`
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.15) 35%, rgba(0, 0, 0, 0.7) 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.1) 35%, rgba(0, 0, 0, 0.75) 100%);
+
+  ${DESKTOP} {
+    background:
+      linear-gradient(90deg, #0f1116 39%, rgba(15, 17, 22, 0.7) 49%, rgba(15, 17, 22, 0) 68%),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 0.45) 100%);
+  }
 `;
 
 const Content = styled.div`
@@ -55,10 +70,20 @@ const Content = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  padding: calc(${HEADER_HEIGHT}px + 2rem) clamp(16px, 5vw, 80px) 6rem;
+  /* Sit in the lower half so the mascot's face stays visible above. */
+  justify-content: flex-end;
+  gap: 1.1rem;
+  padding: calc(${HEADER_HEIGHT}px + 2rem) clamp(16px, 5vw, 80px) 6.5rem;
   text-align: center;
+
+  ${DESKTOP} {
+    align-items: flex-start;
+    justify-content: center;
+    max-width: min(46%, 640px);
+    margin-left: clamp(16px, 5vw, 80px);
+    padding-inline: 0;
+    text-align: left;
+  }
 `;
 
 /** The mascot line: a brand moment, not the page heading. */
@@ -66,7 +91,7 @@ const Display = styled.p`
   margin: 0;
   font-family: var(--font-hero), sans-serif;
   font-weight: 900;
-  font-size: clamp(2.75rem, 11vw, 9.5rem);
+  font-size: clamp(2.5rem, 8vw, 5.25rem);
   line-height: 0.92;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -92,6 +117,10 @@ const SearchWrap = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
+
+  ${DESKTOP} {
+    justify-content: flex-start;
+  }
 `;
 
 const Browse = styled(Link)`
@@ -108,6 +137,10 @@ const Browse = styled(Link)`
   &:hover {
     color: ${({ theme }) => theme.colors.accent};
   }
+
+  ${DESKTOP} {
+    padding-inline: 0;
+  }
 `;
 
 const Controls = styled.div`
@@ -119,6 +152,10 @@ const Controls = styled.div`
   display: flex;
   align-items: center;
   gap: 0.25rem;
+
+  ${DESKTOP} {
+    left: 69%;
+  }
 `;
 
 const ArrowButton = styled.button`
@@ -177,7 +214,7 @@ export default function HeroSection() {
     <Hero aria-labelledby="hero-title">
       {SLIDES.map((s, i) => (
         <Slide key={s.image} $active={i === index} aria-hidden={i !== index}>
-          <Image src={s.image} alt="" fill priority={i === 0} sizes="100vw" />
+          <Image src={s.image} alt="" fill priority={i === 0} sizes="100vw" style={{ objectPosition: s.focus }} />
         </Slide>
       ))}
       <Shade />
