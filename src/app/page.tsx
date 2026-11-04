@@ -21,7 +21,7 @@ const PageWrapper = styled.div`
 export default function Home() {
   return (
     <PageWrapper>
-      <AppHeader title="Locals Only" showBackLink={false} />
+      <AppHeader title="Locals Only" titleAs="p" showBackLink={false} />
       <main id="main">
         <HeroSection />
         <FeatureCards />

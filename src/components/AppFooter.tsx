@@ -37,7 +37,7 @@ const FooterMain = styled.div`
   gap: 3rem;
   box-sizing: border-box;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1180px) {
     flex-direction: column;
     align-items: center;
     text-align: center;
@@ -53,7 +53,7 @@ const LogoBlock = styled.div`
   gap: 1rem;
   flex-shrink: 0;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1180px) {
     flex-direction: column;
     align-items: center;
   }
