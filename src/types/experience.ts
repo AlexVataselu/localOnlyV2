@@ -7,6 +7,7 @@ export interface Experience {
   price: number;
   rating: number;
   image: string;
+  images?: string[];
   description?: string;
   activityTypes?: ActivityType[];
   timeOfDays?: TimeOfDay[];

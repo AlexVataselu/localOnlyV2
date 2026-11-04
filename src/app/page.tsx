@@ -1,8 +1,8 @@
 "use client";
 
 import styled from "styled-components";
+import AppHeader from "@/components/AppHeader";
 import {
-  HomeHeader,
   HeroSection,
   FeatureCards,
   NewThisWeekSection,
@@ -21,7 +21,7 @@ const PageWrapper = styled.div`
 export default function Home() {
   return (
     <PageWrapper>
-      <HomeHeader />
+      <AppHeader title="Locals Only" showBackLink={false} />
       <HeroSection />
       <FeatureCards />
       <NewThisWeekSection />

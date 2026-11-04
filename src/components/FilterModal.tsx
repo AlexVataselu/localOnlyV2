@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
-import styled from "styled-components";
+import { useState, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Range, getTrackBackground } from "react-range";
+import styled, { useTheme } from "styled-components";
 import {
   ExperienceFilters,
   DEFAULT_FILTERS,
@@ -10,63 +12,83 @@ import {
   DURATIONS,
   SPECIALS,
 } from "@/types/filters";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useExperienceCount } from "@/hooks/useExperienceCount";
+
+const PRICE_STEP = 5;
+const COUNT_DEBOUNCE_MS = 400;
 
 const Overlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: clamp(0.75rem, 4vw, 1.5rem);
+  box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 `;
 
 const ModalContainer = styled.div`
-  background: ${({ theme }) => theme.colors.background};
+  background: ${({ theme }) => theme.colors.surface};
   border-radius: 16px;
   width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
+  max-width: min(960px, calc(100vw - 1.5rem));
+  max-height: min(90vh, calc(100vh - 2rem));
+  margin: auto;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+
+  @media (min-width: 640px) {
+    max-width: min(960px, calc(100vw - 2rem));
+  }
 `;
 
 const Header = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
   align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  flex-shrink: 0;
+
+  @media (min-width: 640px) {
+    padding: 1.25rem 1.5rem;
+  }
 `;
 
 const Title = styled.h2`
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
+  justify-self: center;
+  grid-column: 2;
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   color: ${({ theme }) => theme.colors.textSecondary};
-  border-radius: 8px;
-  transition: background 0.2s ease;
-  width: 32px;
-  height: 32px;
+  border-radius: 10px;
+  transition: background 0.2s ease, color 0.2s;
+  width: 40px;
+  height: 40px;
+  grid-column: 1;
 
   &:hover {
     background: ${({ theme }) => theme.colors.surface};
+    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
@@ -97,55 +119,147 @@ const CloseIcon = styled.span`
 
 const Content = styled.div`
   flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: 1.5rem;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
+
+  @media (min-width: 640px) {
+    padding: 1.5rem 1.75rem;
+    gap: 1.75rem;
+  }
+`;
+
+/* --- Price: compact one-row bar (Min | slider | Max) --- */
+const PriceSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+`;
+
+const PriceTitleRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+`;
+
+const PriceBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+
+  @media (min-width: 480px) {
+    gap: 1rem;
+  }
 `;
 
 const Section = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
+  min-width: 0;
 `;
 
 const SectionTitle = styled.h3`
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const SectionSubtitle = styled.p`
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   margin: 0;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+/* --- Activity: full width, 2 columns only, room for long labels --- */
+const CheckboxGroupActivity = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem 0;
+
+  @media (min-width: 520px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem 1rem;
+  }
+
+  @media (min-width: 768px) {
+    gap: 0.625rem 1.25rem;
+  }
+`;
+
+/* --- Time, Duration, Specials: 3 cards in a row --- */
+const FilterCardsRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+`;
+
+const FilterCard = styled.div`
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: ${({ theme }) => theme.colors.background};
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
 `;
 
 const CheckboxGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.375rem;
+
+  @media (min-width: 640px) {
+    gap: 0.5rem;
+  }
 `;
 
 const CheckboxContainer = styled.label`
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: flex-start;
+  gap: 0.625rem;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.5rem 0;
+  min-height: 44px;
   border-radius: 8px;
   transition: background 0.2s ease;
+  min-width: 0;
 
   &:hover {
     background: ${({ theme }) => theme.colors.surface};
+  }
+
+  @media (min-width: 640px) {
+    padding: 0.5rem;
+    min-height: 40px;
   }
 `;
 
 const CheckboxInput = styled.input`
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
   cursor: pointer;
   accent-color: ${({ theme }) => theme.colors.accent};
 `;
@@ -153,31 +267,46 @@ const CheckboxInput = styled.input`
 const CheckboxLabel = styled.span`
   font-size: 0.9375rem;
   color: ${({ theme }) => theme.colors.textPrimary};
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.4;
 `;
 
 const RadioGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.375rem;
+
+  @media (min-width: 640px) {
+    gap: 0.5rem;
+  }
 `;
 
 const RadioContainer = styled.label`
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: flex-start;
+  gap: 0.625rem;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.5rem 0;
+  min-height: 44px;
   border-radius: 8px;
   transition: background 0.2s ease;
 
   &:hover {
     background: ${({ theme }) => theme.colors.surface};
   }
+
+  @media (min-width: 640px) {
+    padding: 0.5rem;
+    min-height: 40px;
+  }
 `;
 
 const RadioInput = styled.input`
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
   cursor: pointer;
   accent-color: ${({ theme }) => theme.colors.accent};
 `;
@@ -185,22 +314,29 @@ const RadioInput = styled.input`
 const RadioLabel = styled.span`
   font-size: 0.9375rem;
   color: ${({ theme }) => theme.colors.textPrimary};
+  overflow-wrap: break-word;
+  line-height: 1.4;
 `;
 
-const PriceInputs = styled.div`
-  display: flex;
-  gap: 1rem;
-  align-items: center;
+const PriceInputWrap = styled.div`
+  width: 72px;
+  flex-shrink: 0;
+
+  @media (min-width: 480px) {
+    width: 80px;
+  }
 `;
 
 const PriceInput = styled.input`
-  flex: 1;
-  padding: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.5rem;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   background: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
+  box-sizing: border-box;
 
   &:focus {
     outline: none;
@@ -208,125 +344,41 @@ const PriceInput = styled.input`
   }
 `;
 
-const RangeSliderContainer = styled.div`
-  position: relative;
-  width: 100%;
-  margin: 1rem 0;
-`;
-
-const RangeSliderWrapper = styled.div`
-  position: relative;
-  height: 6px;
-  background: ${({ theme }) => theme.colors.surface};
-  border-radius: 3px;
-`;
-
-const RangeSliderTrack = styled.div<{ $left: number; $width: number }>`
-  position: absolute;
-  left: ${({ $left }) => $left}%;
-  width: ${({ $width }) => $width}%;
-  height: 100%;
-  background: ${({ theme }) => theme.colors.accent};
-  border-radius: 3px;
-`;
-
-const RangeSliderInput = styled.input<{ $isMin: boolean }>`
-  position: absolute;
-  width: 100%;
-  height: 20px;
-  background: none;
-  pointer-events: ${({ $isMin }) => ($isMin ? "auto" : "none")};
-  -webkit-appearance: none;
-  appearance: none;
-  top: 0;
-  left: 0;
-  cursor: pointer;
-  z-index: ${({ $isMin }) => ($isMin ? 2 : 1)};
-
-  &::-webkit-slider-runnable-track {
-    height: 6px;
-    background: transparent;
-  }
-
-  &::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: ${({ theme }) => theme.colors.accent};
-    cursor: pointer;
-    pointer-events: all;
-    border: 2px solid ${({ theme }) => theme.colors.background};
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease;
-    margin-top: -7px;
-
-    &:hover {
-      transform: scale(1.1);
-    }
-  }
-
-  &::-moz-range-track {
-    height: 6px;
-    background: transparent;
-    border: none;
-  }
-
-  &::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: ${({ theme }) => theme.colors.accent};
-    cursor: pointer;
-    pointer-events: all;
-    border: 2px solid ${({ theme }) => theme.colors.background};
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease;
-
-    &:hover {
-      transform: scale(1.1);
-    }
-  }
-
-  &:focus {
-    outline: none;
-  }
-
-  &:focus::-webkit-slider-thumb {
-    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}33;
-  }
-
-  &:focus::-moz-range-thumb {
-    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}33;
-  }
-`;
-
-const RangeSliderInputMax = styled(RangeSliderInput)`
-  pointer-events: auto;
-  z-index: 2;
-`;
-
-const DualRangeContainer = styled.div`
-  position: relative;
-  height: 20px;
-  width: 100%;
+const PriceSliderWrap = styled.div`
+  flex: 1;
+  min-width: 80px;
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
 `;
 
 const Footer = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
-  gap: 1rem;
+  gap: 0.75rem;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  @media (min-width: 640px) {
+    padding: 1.25rem 1.5rem;
+    gap: 1rem;
+  }
 `;
 
 const ClearButton = styled.button`
   padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  min-height: 44px;
+  border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.background};
+  background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.9375rem;
   font-weight: 500;
@@ -334,19 +386,20 @@ const ClearButton = styled.button`
   transition: background 0.2s ease, border-color 0.2s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.surface};
+    background: ${({ theme }) => theme.colors.cardBackground};
     border-color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
 const ShowResultsButton = styled.button`
   padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  min-height: 44px;
+  border-radius: 12px;
   border: none;
   background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.onAccent};
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease;
 
@@ -362,7 +415,8 @@ interface FilterModalProps {
   onFiltersChange: (filters: ExperienceFilters) => void;
   resultCount: number;
   averagePrice: number;
-  maxPrice?: number;
+  minPrice: number;
+  maxPrice: number;
 }
 
 export default function FilterModal({
@@ -372,13 +426,44 @@ export default function FilterModal({
   onFiltersChange,
   resultCount,
   averagePrice,
-  maxPrice = 1000,
+  minPrice,
+  maxPrice,
 }: FilterModalProps) {
   const [localFilters, setLocalFilters] = useState<ExperienceFilters>(filters);
+  const theme = useTheme();
+  const trackColor = theme?.colors?.border ?? "#e0e0e6";
+  const accentColor = theme?.colors?.accent ?? "#E2A506";
+  const thumbBg = theme?.colors?.background ?? "#fff";
+
+  // Range needs max > min; when all experiences have the same price, use min + step
+  const rangeMax = maxPrice > minPrice ? maxPrice : minPrice + PRICE_STEP;
+
+  // Clamp to [minPrice, maxPrice] so Range never receives values outside bounds (avoids
+  // "value (0) is smaller than min (35)" when localFilters or filters are [0,1000] before useEffect runs).
+  // Range still uses rangeMax so min < max when all experiences share the same price.
+  const rangeValues: [number, number] = (() => {
+    const v0 = Math.max(minPrice, Math.min(localFilters.priceRange[0], maxPrice));
+    const v1 = Math.max(minPrice, Math.min(localFilters.priceRange[1], maxPrice));
+    return [Math.min(v0, v1), Math.max(v0, v1)];
+  })();
+
+  const debouncedLocalFilters = useDebouncedValue(localFilters, COUNT_DEBOUNCE_MS);
+  const { data: countData, isFetching: isCountFetching } = useExperienceCount(
+    debouncedLocalFilters,
+    isOpen
+  );
+  const displayCount = countData?.totalCount ?? resultCount;
 
   useEffect(() => {
-    setLocalFilters(filters);
-  }, [filters, isOpen]);
+    const low = Math.max(minPrice, Math.min(filters.priceRange[0], maxPrice));
+    const high = Math.max(minPrice, Math.min(filters.priceRange[1], maxPrice));
+    const clamped: [number, number] = [Math.min(low, high), Math.max(low, high)];
+    setLocalFilters({ ...filters, priceRange: clamped });
+  }, [filters, isOpen, minPrice, maxPrice]);
+
+  const handlePriceRangeChange = useCallback((vals: number[]) => {
+    setLocalFilters((prev) => ({ ...prev, priceRange: [vals[0], vals[1]] }));
+  }, []);
 
   const handleActivityTypeChange = useCallback(
     (activityType: string, checked: boolean) => {
@@ -425,13 +510,15 @@ export default function FilterModal({
 
   const handlePriceMinChange = useCallback(
     (value: string) => {
-      const numValue = Math.max(0, Number(value) || 0);
-      setLocalFilters((prev) => ({
-        ...prev,
-        priceRange: [Math.min(numValue, prev.priceRange[1]), prev.priceRange[1]],
-      }));
+      setLocalFilters((prev) => {
+        const numValue = Math.max(
+          minPrice,
+          Math.min(Number(value) || minPrice, prev.priceRange[1])
+        );
+        return { ...prev, priceRange: [numValue, prev.priceRange[1]] };
+      });
     },
-    [],
+    [minPrice],
   );
 
   const handlePriceMaxChange = useCallback(
@@ -448,26 +535,6 @@ export default function FilterModal({
     [localFilters.priceRange, maxPrice],
   );
 
-  const handleMinSliderChange = useCallback(
-    (value: number) => {
-      setLocalFilters((prev) => ({
-        ...prev,
-        priceRange: [Math.min(value, prev.priceRange[1]), prev.priceRange[1]],
-      }));
-    },
-    [],
-  );
-
-  const handleMaxSliderChange = useCallback(
-    (value: number) => {
-      setLocalFilters((prev) => ({
-        ...prev,
-        priceRange: [prev.priceRange[0], Math.max(value, prev.priceRange[0])],
-      }));
-    },
-    [],
-  );
-
   const handleClearAll = useCallback(() => {
     setLocalFilters(DEFAULT_FILTERS);
   }, []);
@@ -477,30 +544,98 @@ export default function FilterModal({
     onClose();
   }, [localFilters, onFiltersChange, onClose]);
 
-  const rangePercentages = useMemo(() => {
-    const maxRange = maxPrice;
-    const left = (localFilters.priceRange[0] / maxRange) * 100;
-    const width = ((localFilters.priceRange[1] - localFilters.priceRange[0]) / maxRange) * 100;
-    return { left, width };
-  }, [localFilters.priceRange, maxPrice]);
-
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <Overlay onClick={onClose}>
       <ModalContainer onClick={(e) => e.stopPropagation()}>
         <Header>
-          <Title>Filters</Title>
           <CloseButton onClick={onClose} aria-label="Close filters">
             <CloseIcon />
           </CloseButton>
+          <Title>Filters</Title>
+          <span style={{ width: 40, height: 40 }} aria-hidden />
         </Header>
 
         <Content>
-          {/* Activity Type */}
+          {/* Price: compact one-row bar */}
+          <PriceSection>
+            <PriceTitleRow>
+              <SectionTitle>Price</SectionTitle>
+              <SectionSubtitle>Avg. ${averagePrice.toFixed(0)}</SectionSubtitle>
+            </PriceTitleRow>
+            <PriceBar>
+              <PriceInputWrap>
+                <PriceInput
+                  type="number"
+                  min={minPrice}
+                  max={rangeValues[1]}
+                  value={rangeValues[0]}
+                  onChange={(e) => handlePriceMinChange(e.target.value)}
+                  placeholder="Min"
+                />
+              </PriceInputWrap>
+              <PriceSliderWrap>
+                <Range
+                  values={rangeValues}
+                  step={PRICE_STEP}
+                  min={minPrice}
+                  max={rangeMax}
+                  onChange={handlePriceRangeChange}
+                  renderTrack={({ props, children }) => (
+                    <div
+                      {...props}
+                      style={{
+                        ...props.style,
+                        height: "6px",
+                        width: "100%",
+                        borderRadius: "4px",
+                        background: getTrackBackground({
+                          values: rangeValues,
+                          colors: [trackColor, accentColor, trackColor],
+                          min: minPrice,
+                          max: rangeMax,
+                        }),
+                      }}
+                    >
+                      {children}
+                    </div>
+                  )}
+                  renderThumb={({ props: { key, style, ...rest } }) => (
+                    <div
+                      key={key}
+                      {...rest}
+                      style={{
+                        ...style,
+                        height: "18px",
+                        width: "18px",
+                        borderRadius: "50%",
+                        backgroundColor: accentColor,
+                        border: `2px solid ${thumbBg}`,
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                        outline: "none",
+                      }}
+                    />
+                  )}
+                />
+              </PriceSliderWrap>
+              <PriceInputWrap>
+                <PriceInput
+                  type="number"
+                  min={rangeValues[0]}
+                  max={maxPrice}
+                  value={rangeValues[1]}
+                  onChange={(e) => handlePriceMaxChange(e.target.value)}
+                  placeholder="Max"
+                />
+              </PriceInputWrap>
+            </PriceBar>
+          </PriceSection>
+
+          {/* Activity type: full width, 2 cols, labels can wrap */}
           <Section>
             <SectionTitle>Activity type</SectionTitle>
-            <CheckboxGroup>
+            <CheckboxGroupActivity>
               {ACTIVITY_TYPES.map((type) => (
                 <CheckboxContainer key={type}>
                   <CheckboxInput
@@ -511,121 +646,68 @@ export default function FilterModal({
                   <CheckboxLabel>{type}</CheckboxLabel>
                 </CheckboxContainer>
               ))}
-            </CheckboxGroup>
+            </CheckboxGroupActivity>
           </Section>
 
-          {/* Price Range */}
-          <Section>
-            <SectionTitle>Price range</SectionTitle>
-            <SectionSubtitle>
-              The average price of an experience is ${averagePrice.toFixed(2)}
-            </SectionSubtitle>
-            <RangeSliderContainer>
-              <RangeSliderWrapper>
-                <RangeSliderTrack
-                  $left={rangePercentages.left}
-                  $width={rangePercentages.width}
-                />
-              </RangeSliderWrapper>
-              <DualRangeContainer>
-                <RangeSliderInput
-                  $isMin={true}
-                  type="range"
-                  min={0}
-                  max={maxPrice}
-                  value={localFilters.priceRange[0]}
-                  onChange={(e) => handleMinSliderChange(Number(e.target.value))}
-                />
-                <RangeSliderInputMax
-                  $isMin={false}
-                  type="range"
-                  min={0}
-                  max={maxPrice}
-                  value={localFilters.priceRange[1]}
-                  onChange={(e) => handleMaxSliderChange(Number(e.target.value))}
-                />
-              </DualRangeContainer>
-            </RangeSliderContainer>
-            <PriceInputs>
-              <PriceInput
-                type="number"
-                min={0}
-                max={localFilters.priceRange[1]}
-                value={localFilters.priceRange[0]}
-                onChange={(e) => handlePriceMinChange(e.target.value)}
-                placeholder="Min"
-              />
-              <PriceInput
-                type="number"
-                min={localFilters.priceRange[0]}
-                max={maxPrice}
-                value={localFilters.priceRange[1]}
-                onChange={(e) => handlePriceMaxChange(e.target.value)}
-                placeholder="Max"
-              />
-            </PriceInputs>
-          </Section>
-
-          {/* Time of Day */}
-          <Section>
-            <SectionTitle>Time of Day</SectionTitle>
-            <CheckboxGroup>
-              {TIME_OF_DAYS.map((time) => (
-                <CheckboxContainer key={time}>
-                  <CheckboxInput
-                    type="checkbox"
-                    checked={localFilters.timeOfDays.includes(time)}
-                    onChange={(e) => handleTimeOfDayChange(time, e.target.checked)}
-                  />
-                  <CheckboxLabel>{time}</CheckboxLabel>
-                </CheckboxContainer>
-              ))}
-            </CheckboxGroup>
-          </Section>
-
-          {/* Duration */}
-          <Section>
-            <SectionTitle>Duration</SectionTitle>
-            <RadioGroup>
-              {DURATIONS.map((duration) => (
-                <RadioContainer key={duration}>
-                  <RadioInput
-                    type="radio"
-                    name="duration"
-                    checked={localFilters.duration === duration}
-                    onChange={() => handleDurationChange(duration)}
-                  />
-                  <RadioLabel>{duration}</RadioLabel>
-                </RadioContainer>
-              ))}
-            </RadioGroup>
-          </Section>
-
-          {/* Specials */}
-          <Section>
-            <SectionTitle>Specials</SectionTitle>
-            <CheckboxGroup>
-              {SPECIALS.map((special) => (
-                <CheckboxContainer key={special}>
-                  <CheckboxInput
-                    type="checkbox"
-                    checked={localFilters.specials.includes(special)}
-                    onChange={(e) => handleSpecialChange(special, e.target.checked)}
-                  />
-                  <CheckboxLabel>{special}</CheckboxLabel>
-                </CheckboxContainer>
-              ))}
-            </CheckboxGroup>
-          </Section>
+          {/* Time, Duration, Specials: 3 cards */}
+          <FilterCardsRow>
+            <FilterCard>
+              <SectionTitle>Time of Day</SectionTitle>
+              <CheckboxGroup>
+                {TIME_OF_DAYS.map((time) => (
+                  <CheckboxContainer key={time}>
+                    <CheckboxInput
+                      type="checkbox"
+                      checked={localFilters.timeOfDays.includes(time)}
+                      onChange={(e) => handleTimeOfDayChange(time, e.target.checked)}
+                    />
+                    <CheckboxLabel>{time}</CheckboxLabel>
+                  </CheckboxContainer>
+                ))}
+              </CheckboxGroup>
+            </FilterCard>
+            <FilterCard>
+              <SectionTitle>Duration</SectionTitle>
+              <RadioGroup>
+                {DURATIONS.map((duration) => (
+                  <RadioContainer key={duration}>
+                    <RadioInput
+                      type="radio"
+                      name="duration"
+                      checked={localFilters.duration === duration}
+                      onChange={() => handleDurationChange(duration)}
+                    />
+                    <RadioLabel>{duration}</RadioLabel>
+                  </RadioContainer>
+                ))}
+              </RadioGroup>
+            </FilterCard>
+            <FilterCard>
+              <SectionTitle>Specials</SectionTitle>
+              <CheckboxGroup>
+                {SPECIALS.map((special) => (
+                  <CheckboxContainer key={special}>
+                    <CheckboxInput
+                      type="checkbox"
+                      checked={localFilters.specials.includes(special)}
+                      onChange={(e) => handleSpecialChange(special, e.target.checked)}
+                    />
+                    <CheckboxLabel>{special}</CheckboxLabel>
+                  </CheckboxContainer>
+                ))}
+              </CheckboxGroup>
+            </FilterCard>
+          </FilterCardsRow>
         </Content>
 
         <Footer>
           <ClearButton onClick={handleClearAll}>Clear all</ClearButton>
-          <ShowResultsButton onClick={handleShowResults}>
-            Show all {resultCount} results
+          <ShowResultsButton onClick={handleShowResults} aria-busy={isCountFetching}>
+            Show all {displayCount} results
           </ShowResultsButton>
         </Footer>
       </ModalContainer>
-    </Overlay>
+    </Overlay>,
+    document.body
   );
 }

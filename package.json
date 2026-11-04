@@ -25,6 +25,7 @@
     "react": "19.2.0",
     "react-day-picker": "^9.13.0",
     "react-dom": "19.2.0",
+    "react-range": "^1.10.0",
     "styled-components": "^6.1.19"
   },
   "devDependencies": {
@@ -33,7 +34,7 @@
     "@types/react-dom": "^19",
     "@types/styled-components": "^5.1.35",
     "babel-plugin-react-compiler": "1.0.0",
-    "baseline-browser-mapping": "^2.9.15",
+    "baseline-browser-mapping": "^2.9.16",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tsx": "^4.0.0",

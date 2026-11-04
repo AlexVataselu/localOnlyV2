@@ -14,22 +14,18 @@ const Card = styled(Link)`
   flex-direction: column;
   border-radius: 16px;
   overflow: hidden;
-  /* liquid glass - match ChallengeBadgeCard */
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* Solid glass-like background: avoids expensive backdrop-filter on every card */
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-  will-change: transform;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  contain: layout paint;
 
   &:hover {
-    transform: translateY(-4px) translateZ(0);
-    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.14);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 `;
@@ -81,12 +77,9 @@ const Tag = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   white-space: nowrap;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-  transform: translateY(0);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     background: rgba(255, 255, 255, 0.15);
     border-color: ${({ theme }) => theme.colors.accent};
     color: ${({ theme }) => theme.colors.accent};

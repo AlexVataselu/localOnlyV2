@@ -8,6 +8,8 @@ import { Experience } from "@/types/experience";
 
 const GRID_GAP_PX = 32; // matches 2rem gap from previous grid
 const INFO_HEIGHT_ESTIMATE = 160; // heuristic for text block height
+const RESIZE_THROTTLE_MS = 100;
+const MIN_WIDTH_DELTA = 2; // ignore sub-pixel resize churn
 
 const GridContainer = styled.div`
   position: relative;
@@ -45,8 +47,9 @@ export default function ExperienceGrid({ experiences }: ExperienceGridProps) {
   const [containerWidth, setContainerWidth] = useState(0);
 
   const columns = useMemo(() => {
-    if (containerWidth >= 1080) return 3;
-    if (containerWidth >= 720) return 2;
+    if (containerWidth >= 1080) return 4;
+    if (containerWidth >= 800) return 3;
+    if (containerWidth >= 560) return 2;
     return 1;
   }, [containerWidth]);
 
@@ -54,13 +57,24 @@ export default function ExperienceGrid({ experiences }: ExperienceGridProps) {
     const node = containerRef.current;
     if (!node) return;
 
+    let lastWidth = 0;
+    let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+
     const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      setContainerWidth(entry.contentRect.width);
+      const w = Math.round(entries[0].contentRect.width);
+      if (Math.abs(w - lastWidth) < MIN_WIDTH_DELTA) return;
+
+      if (throttleTimer) clearTimeout(throttleTimer);
+      throttleTimer = setTimeout(() => {
+        throttleTimer = null;
+        lastWidth = w;
+        setContainerWidth(w);
+      }, RESIZE_THROTTLE_MS);
     });
     resizeObserver.observe(node);
 
     return () => {
+      if (throttleTimer) clearTimeout(throttleTimer);
       resizeObserver.disconnect();
     };
   }, []);
@@ -88,8 +102,9 @@ export default function ExperienceGrid({ experiences }: ExperienceGridProps) {
     return imageHeight + INFO_HEIGHT_ESTIMATE + GRID_GAP_PX;
   }, [safeColumns, containerWidth]);
 
+  // Virtualize when we have enough items to benefit (reduces DOM nodes and paint)
   const shouldUseVirtualization =
-    rows.length > safeColumns * 2 && containerWidth > 0;
+    experiences.length > 12 && containerWidth > 0;
 
   // Don't use scrollMargin - the container is already correctly positioned
   // in the document flow, and using scrollMargin can cause layout shifts

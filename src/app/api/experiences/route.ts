@@ -11,6 +11,7 @@ import {
   mapDurationFromEnum,
   mapSpecialFromEnum,
 } from "@/utils/filterMappers";
+import type { ActivityType, TimeOfDay, Duration, Special } from "@/types/filters";
 
 type ExperienceWithHost = {
   id: string;
@@ -23,6 +24,10 @@ type ExperienceWithHost = {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
+  activityTypes: string[];
+  timeOfDays: string[];
+  duration: string | null;
+  specials: string[];
   host: {
     id: string;
     name: string | null;
@@ -63,54 +68,73 @@ export async function GET(request: Request) {
 
   // Activity types filter (using hasSome for array contains any)
   if (activityTypesParam) {
-    const activityTypes = activityTypesParam.split(",").map(mapActivityTypeToEnum);
-    where.activityTypes = { hasSome: activityTypes };
+    const activityTypes = activityTypesParam
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => mapActivityTypeToEnum(s as ActivityType))
+      .filter(Boolean);
+    if (activityTypes.length > 0) where.activityTypes = { hasSome: activityTypes };
   }
 
   // Time of day filter
   if (timeOfDaysParam) {
-    const timeOfDays = timeOfDaysParam.split(",").map(mapTimeOfDayToEnum);
-    where.timeOfDays = { hasSome: timeOfDays };
+    const timeOfDays = timeOfDaysParam
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => mapTimeOfDayToEnum(s as TimeOfDay))
+      .filter(Boolean);
+    if (timeOfDays.length > 0) where.timeOfDays = { hasSome: timeOfDays };
   }
 
   // Duration filter
   if (durationParam && durationParam !== "null") {
-    where.duration = mapDurationToEnum(durationParam as any);
+    where.duration = mapDurationToEnum(durationParam as Duration);
   }
 
   // Specials filter
   if (specialsParam) {
-    const specials = specialsParam.split(",").map(mapSpecialToEnum);
-    where.specials = { hasSome: specials };
+    const specials = specialsParam
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => mapSpecialToEnum(s as Special))
+      .filter(Boolean);
+    if (specials.length > 0) where.specials = { hasSome: specials };
   }
 
-  // Get total count for filtered results
-  const totalCount = await prisma.experience.count({ where });
+  // Page 1: run count, aggregate, and findMany in parallel. Page > 1: only findMany (client uses pages[0] for totalCount/averagePrice/maxPrice).
+  const isFirstPage = page === 1;
 
-  // Calculate average and max price
-  const priceStats = await prisma.experience.aggregate({
-    where,
-    _avg: { price: true },
-    _max: { price: true },
-  });
-  const averagePrice = priceStats._avg.price ?? 0;
-  const maxPrice = priceStats._max.price ?? 1000;
-
-  const experiences = await prisma.experience.findMany({
-    where,
-    skip,
-    take: limit + 1,
-    orderBy: { createdAt: "desc" },
-    include: {
-      host: {
-        select: {
-          id: true,
-          name: true,
-          image: true,
+  const [totalCount, priceStats, experiences] = await Promise.all([
+    isFirstPage ? prisma.experience.count({ where }) : 0,
+    isFirstPage
+      ? prisma.experience.aggregate({
+          where,
+          _avg: { price: true },
+          _max: { price: true },
+        })
+      : { _avg: { price: null as number | null }, _max: { price: null as number | null } },
+    prisma.experience.findMany({
+      where,
+      skip,
+      take: limit + 1,
+      orderBy: { createdAt: "desc" },
+      include: {
+        host: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
         },
       },
-    },
-  });
+    }),
+  ]);
+
+  const averagePrice = isFirstPage ? (priceStats._avg.price ?? 0) : 0;
+  const maxPrice = isFirstPage ? (priceStats._max.price ?? 1000) : 0;
 
   const hasMore = experiences.length > limit;
   const limitedExperiences = hasMore ? experiences.slice(0, limit) : experiences;
@@ -156,6 +180,7 @@ export async function POST(req: Request) {
     price,
     rating,
     image,
+    images: imagesBody,
     description,
     activityTypes,
     timeOfDays,
@@ -163,23 +188,35 @@ export async function POST(req: Request) {
     specials,
   } = body ?? {};
 
-  if (!title || !location || !price || !rating || !image) {
+  const imagesArr = Array.isArray(imagesBody) ? (imagesBody as string[]).filter((u): u is string => typeof u === "string" && u.trim().length > 0) : [];
+  const coverImage = imagesArr.length > 0 ? imagesArr[0] : (typeof image === "string" ? image.trim() : "");
+
+  if (!title || !location || !price || !rating) {
     return NextResponse.json(
-      { error: "Missing required fields: title, location, price, rating, image" },
+      { error: "Missing required fields: title, location, price, rating" },
       { status: 400 },
     );
   }
 
+  if (!coverImage) {
+    return NextResponse.json(
+      { error: "At least one image is required (image or images[0])" },
+      { status: 400 },
+    );
+  }
+
+  const imagesToStore = imagesArr.length > 0 ? imagesArr : [coverImage];
+
   // Map filter fields if provided
   const mappedActivityTypes = activityTypes
-    ? (activityTypes as string[]).map(mapActivityTypeToEnum)
+    ? (activityTypes as string[]).map((s) => mapActivityTypeToEnum(s as ActivityType))
     : [];
   const mappedTimeOfDays = timeOfDays
-    ? (timeOfDays as string[]).map(mapTimeOfDayToEnum)
+    ? (timeOfDays as string[]).map((s) => mapTimeOfDayToEnum(s as TimeOfDay))
     : [];
-  const mappedDuration = duration ? mapDurationToEnum(duration as any) : null;
+  const mappedDuration = duration ? mapDurationToEnum(duration as Duration) : null;
   const mappedSpecials = specials
-    ? (specials as string[]).map(mapSpecialToEnum)
+    ? (specials as string[]).map((s) => mapSpecialToEnum(s as Special))
     : [];
 
   const experience = await prisma.experience.create({
@@ -188,7 +225,8 @@ export async function POST(req: Request) {
       location,
       price: Number(price),
       rating: Number(rating),
-      image,
+      image: coverImage,
+      images: imagesToStore,
       description,
       activityTypes: mappedActivityTypes as any,
       timeOfDays: mappedTimeOfDays as any,

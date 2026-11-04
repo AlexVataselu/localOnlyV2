@@ -35,7 +35,7 @@ export interface ExperienceFilters {
 
 export const DEFAULT_FILTERS: ExperienceFilters = {
   activityTypes: [],
-  priceRange: [0, 1000], // Will be dynamically updated based on maxPrice
+  priceRange: [0, 1000],
   timeOfDays: [],
   duration: null,
   specials: [],

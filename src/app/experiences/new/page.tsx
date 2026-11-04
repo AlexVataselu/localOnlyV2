@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import ExperienceForm from "@/components/ExperienceForm";
 import { auth } from "@/lib/auth";
+import NewExperiencePageClient from "./NewExperiencePageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export default async function NewExperiencePage() {
     redirect("/experiences");
   }
 
-  return <ExperienceForm />;
+  return <NewExperiencePageClient />;
 }
 
 

@@ -7,6 +7,7 @@ import { Roboto } from "next/font/google";
 import styled from "styled-components";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ChallengeBadgesSlider from "./ChallengeBadgesSlider";
+import { HERO_SLIDES } from "./heroSlideData";
 import { SearchParams, DEFAULT_SEARCH_PARAMS } from "@/types/search";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["900"] });
@@ -39,12 +40,7 @@ const SlideBg = styled.div`
 const Overlay = styled.div`
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.3) 0%,
-    rgba(0, 0, 0, 0.2) 40%,
-    rgba(0, 0, 0, 0.5) 100%
-  );
+  background: transparent;
   pointer-events: none;
 `;
 
@@ -104,14 +100,13 @@ const BadgesWrap = styled.div`
   margin-top: 1.5rem;
 `;
 
-const HeroNav = styled.div`
+const HERO_PADDING = "clamp(24px, 5vw, 80px)";
+
+const HeroNavSide = styled.div<{ $side: "left" | "right" }>`
   position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  ${({ $side }) => ($side === "left" ? `left: ${HERO_PADDING};` : `right: ${HERO_PADDING};`)}
   z-index: 10;
 `;
 
@@ -134,9 +129,15 @@ const HeroNavBtn = styled.button`
   }
 `;
 
-const Dots = styled.div`
+const HeroNavCenter = styled.div`
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+  z-index: 10;
 `;
 
 const Dot = styled.button<{ $active: boolean }>`
@@ -154,21 +155,13 @@ const Dot = styled.button<{ $active: boolean }>`
   }
 `;
 
-const SLIDES = [
-  { image: "/bear.png", titleMain: "THE BEAR", titleSub: "NECESSITIES" },
-  { image: "/fox.png", titleMain: "THE FOX'S", titleSub: "DEN" },
-  { image: "/lynx.png", titleMain: "THE LYNX'S", titleSub: "TRAIL" },
-  { image: "/wolf.png", titleMain: "THE WOLF", titleSub: "PACK" },
-  { image: "/dog.png", titleMain: "THE DOG'S", titleSub: "JOURNEY" },
-];
-
 export default function HeroSection() {
   const [index, setIndex] = useState(0);
   const [searchParams, setSearchParams] = useState<SearchParams>(DEFAULT_SEARCH_PARAMS);
   const mainRef = useRef<HTMLSpanElement>(null);
   const [subWidth, setSubWidth] = useState<number | undefined>(undefined);
   const router = useRouter();
-  const slide = SLIDES[index];
+  const slide = HERO_SLIDES[index];
 
   useEffect(() => {
     const el = mainRef.current;
@@ -181,7 +174,7 @@ export default function HeroSection() {
   }, [slide.titleMain]);
 
   const go = (delta: number) => {
-    setIndex((i) => (i + delta + SLIDES.length) % SLIDES.length);
+    setIndex((i) => (i + delta + HERO_SLIDES.length) % HERO_SLIDES.length);
   };
 
   const onSearch = useCallback(
@@ -196,7 +189,7 @@ export default function HeroSection() {
 
   return (
     <Hero>
-      {SLIDES.map((s, i) => (
+      {HERO_SLIDES.map((s, i) => (
         <Slide key={s.image} $active={i === index}>
           <SlideBg>
             <Image src={s.image} alt="" fill priority={i === 0} sizes="100vw" />
@@ -211,29 +204,35 @@ export default function HeroSection() {
           <TitleSub $w={subWidth}>{slide.titleSub}</TitleSub>
         </TitleBlock>
         <BadgesWrap>
-          <ChallengeBadgesSlider />
+          <ChallengeBadgesSlider
+            key={index}
+            challenges={slide.challenges}
+            title={slide.badgeSectionTitle}
+          />
         </BadgesWrap>
       </Content>
 
-      <HeroNav>
+      <HeroNavSide $side="left">
         <HeroNavBtn type="button" onClick={() => go(-1)} aria-label="Previous slide">
           <ChevronLeft size={24} />
         </HeroNavBtn>
-        <Dots>
-          {SLIDES.map((_, i) => (
-            <Dot
-              key={i}
-              $active={i === index}
-              type="button"
-              onClick={() => setIndex(i)}
-              aria-label={`Go to slide ${i + 1}`}
-            />
-          ))}
-        </Dots>
+      </HeroNavSide>
+      <HeroNavSide $side="right">
         <HeroNavBtn type="button" onClick={() => go(1)} aria-label="Next slide">
           <ChevronRight size={24} />
         </HeroNavBtn>
-      </HeroNav>
+      </HeroNavSide>
+      <HeroNavCenter>
+        {HERO_SLIDES.map((_, i) => (
+          <Dot
+            key={i}
+            $active={i === index}
+            type="button"
+            onClick={() => setIndex(i)}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </HeroNavCenter>
     </Hero>
   );
 }

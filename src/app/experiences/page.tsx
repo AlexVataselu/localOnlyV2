@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import styled from "styled-components";
-import ThemeToggle from "@/components/ThemeToggle";
-import AuthButton from "@/components/AuthButton";
-import UploadExperienceButton from "@/components/UploadExperienceButton";
+import AppHeader from "@/components/AppHeader";
 import FilterBar from "@/components/FilterBar";
 import FilterModal from "@/components/FilterModal";
 import SearchBar from "@/components/SearchBar";
@@ -30,107 +27,6 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-`;
-
-const Header = styled.header`
-  position: -webkit-sticky !important;
-  position: sticky !important;
-  top: 0 !important;
-  left: 0;
-  right: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  z-index: 1000;
-`;
-
-const HeaderInner = styled.div`
-  width: 100%;
-  padding: 0 clamp(24px, 5vw, 80px);
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-`;
-
-const HeaderTop = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem 0;
-
-  @media (max-width: 900px) {
-    flex-wrap: wrap;
-  }
-
-  @media (max-width: 768px) {
-    gap: 0.75rem;
-    padding: 1rem 0;
-  }
-`;
-
-const HeaderBottom = styled.div`
-  padding: 0;
-`;
-
-const HeaderLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-shrink: 0;
-`;
-
-const HeaderCenter = styled.div`
-  flex: 1;
-  min-width: 0;
-  max-width: 400px;
-  margin: 0 2rem;
-
-  @media (max-width: 900px) {
-    flex: 1 1 100%;
-    order: 3;
-    max-width: none;
-    margin: 0.5rem 0 0;
-  }
-`;
-
-const LogoLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-`;
-
-const LogoImage = styled(Image)`
-  width: 64px;
-  height: auto;
-`;
-
-const Title = styled.h1`
-  font-size: 2rem;
-  font-weight: 600;
-  margin: 0;
-`;
-
-const Actions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.accent};
-  }
 `;
 
 const Content = styled.main`
@@ -180,9 +76,19 @@ const LoadingMore = styled.div`
 `;
 
 export default function ExperiencesPage() {
+  const urlSearch = useSearchParams();
   const [filters, setFilters] = useState<ExperienceFilters>(DEFAULT_FILTERS);
   const [searchParams, setSearchParams] = useState<SearchParams>(DEFAULT_SEARCH_PARAMS);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+  // Sync URL -> searchParams when landing from e.g. home (HeaderSearchBar navigates with ?location= & ?experience=)
+  useEffect(() => {
+    const loc = urlSearch.get("location") ?? "";
+    const exp = urlSearch.get("experience") ?? "";
+    if (loc || exp) {
+      setSearchParams((prev) => ({ ...prev, location: loc, experience: exp }));
+    }
+  }, [urlSearch]);
 
   const {
     data,
@@ -227,25 +133,14 @@ export default function ExperiencesPage() {
     return data?.pages[0]?.averagePrice ?? 0;
   }, [data]);
 
-  const maxPrice = useMemo(() => {
-    return data?.pages[0]?.maxPrice ?? 1000;
-  }, [data]);
-
-  // Initialize filters with maxPrice when data is available
-  useEffect(() => {
-    if (maxPrice > 0 && maxPrice !== 1000) {
-      setFilters((prev) => {
-        // Only update if still using default max of 1000
-        if (prev.priceRange[1] === 1000) {
-          return {
-            ...prev,
-            priceRange: [0, maxPrice],
-          };
-        }
-        return prev;
-      });
-    }
-  }, [maxPrice]);
+  const { minPrice, maxPrice } = useMemo(() => {
+    if (!experiences.length) return { minPrice: 0, maxPrice: 1000 };
+    const prices = experiences.map((e) => e.price);
+    return {
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+    };
+  }, [experiences]);
 
   const totalCount = useMemo(() => {
     return data?.pages[0]?.totalCount ?? experiences.length;
@@ -296,37 +191,23 @@ export default function ExperiencesPage() {
   if (isLoading) {
     return (
       <PageWrapper>
-        <Header>
-          <HeaderInner>
-            <HeaderTop>
-              <HeaderLeft>
-                <LogoLink href="/">
-                  <LogoImage
-                    src="/localsOnlyLogoV4.7Tryangle.png"
-                    alt="Locals Only"
-                    width={64}
-                    height={64}
-                    priority
-                  />
-                </LogoLink>
-                <Title>Experiences</Title>
-              </HeaderLeft>
-              <HeaderCenter>
-                <SearchBar
-                  value={searchParams}
-                  onChange={setSearchParams}
-                  onSearch={setSearchParams}
-                />
-              </HeaderCenter>
-              <Actions>
-                <BackLink href="/">← Home</BackLink>
-                <ThemeToggle />
-                <UploadExperienceButton />
-                <AuthButton />
-              </Actions>
-            </HeaderTop>
-          </HeaderInner>
-        </Header>
+        <AppHeader
+          title="Experiences"
+          centerSlot={
+            <SearchBar
+              value={searchParams}
+              onChange={setSearchParams}
+              onSearch={setSearchParams}
+            />
+          }
+          bottomSlot={
+            <FilterBar
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onOpenModal={handleOpenFilterModal}
+            />
+          }
+        />
         <Container>
           <Loading>Loading experiences...</Loading>
         </Container>
@@ -337,36 +218,23 @@ export default function ExperiencesPage() {
   if (isError) {
     return (
       <PageWrapper>
-        <Header>
-          <HeaderInner>
-            <HeaderTop>
-              <HeaderLeft>
-                <LogoLink href="/">
-                  <LogoImage
-                    src="/localsOnlyLogoV4.7Tryangle.png"
-                    alt="Locals Only"
-                    width={64}
-                    height={64}
-                  />
-                </LogoLink>
-                <Title>Experiences</Title>
-              </HeaderLeft>
-              <HeaderCenter>
-                <SearchBar
-                  value={searchParams}
-                  onChange={setSearchParams}
-                  onSearch={setSearchParams}
-                />
-              </HeaderCenter>
-              <Actions>
-                <BackLink href="/">← Home</BackLink>
-                <ThemeToggle />
-                <UploadExperienceButton />
-                <AuthButton />
-              </Actions>
-            </HeaderTop>
-          </HeaderInner>
-        </Header>
+        <AppHeader
+          title="Experiences"
+          centerSlot={
+            <SearchBar
+              value={searchParams}
+              onChange={setSearchParams}
+              onSearch={setSearchParams}
+            />
+          }
+          bottomSlot={
+            <FilterBar
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onOpenModal={handleOpenFilterModal}
+            />
+          }
+        />
         <Container>
           <Error>
             {error instanceof Error
@@ -380,43 +248,23 @@ export default function ExperiencesPage() {
 
   return (
     <PageWrapper>
-      <Header>
-        <HeaderInner>
-          <HeaderTop>
-            <HeaderLeft>
-                <LogoLink href="/">
-                  <LogoImage
-                    src="/localsOnlyLogoV4.7Tryangle.png"
-                    alt="Locals Only"
-                    width={64}
-                    height={64}
-                  />
-                </LogoLink>
-                <Title>Experiences</Title>
-              </HeaderLeft>
-              <HeaderCenter>
-                <SearchBar
-                  value={searchParams}
-                  onChange={setSearchParams}
-                  onSearch={setSearchParams}
-                />
-              </HeaderCenter>
-              <Actions>
-                <BackLink href="/">← Home</BackLink>
-                <ThemeToggle />
-                <UploadExperienceButton />
-                <AuthButton />
-              </Actions>
-            </HeaderTop>
-          <HeaderBottom>
-            <FilterBar 
-              filters={filters} 
-              onFiltersChange={handleFiltersChange}
-              onOpenModal={handleOpenFilterModal}
-            />
-          </HeaderBottom>
-        </HeaderInner>
-      </Header>
+      <AppHeader
+        title="Experiences"
+        centerSlot={
+          <SearchBar
+            value={searchParams}
+            onChange={setSearchParams}
+            onSearch={setSearchParams}
+          />
+        }
+        bottomSlot={
+          <FilterBar
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onOpenModal={handleOpenFilterModal}
+          />
+        }
+      />
       <Container>
         <Content>
           {filteredExperiences.length > 0 ? (
@@ -443,6 +291,7 @@ export default function ExperiencesPage() {
         onFiltersChange={handleFiltersChange}
         resultCount={totalCount}
         averagePrice={averagePrice}
+        minPrice={minPrice}
         maxPrice={maxPrice}
       />
     </PageWrapper>

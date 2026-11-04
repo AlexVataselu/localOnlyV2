@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import type { ActivityType, TimeOfDay, Duration, Special } from "@/types/filters";
 import {
   mapActivityTypeToEnum,
   mapTimeOfDayToEnum,
@@ -33,8 +34,12 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 
   const { host, ...rest } = experience;
 
+  const images =
+    (rest.images?.length ?? 0) > 0 ? rest.images : (rest.image ? [rest.image] : []);
+
   return NextResponse.json({
     ...rest,
+    images,
     hostName: host?.name ?? null,
     hostImage: host?.image ?? null,
     activityTypes: (rest.activityTypes || []).map(mapActivityTypeFromEnum),
@@ -73,6 +78,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     price,
     rating,
     image,
+    images: imagesBody,
     description,
     activityTypes,
     timeOfDays,
@@ -80,27 +86,36 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     specials,
   } = body ?? {};
 
-  // Map filter fields if provided
   const updateData: any = {
     title,
     location,
     price: price !== undefined ? Number(price) : undefined,
     rating: rating !== undefined ? Number(rating) : undefined,
-    image,
     description,
   };
 
+  if (imagesBody !== undefined && Array.isArray(imagesBody)) {
+    const imagesArr = (imagesBody as string[]).filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+    if (imagesArr.length > 0) {
+      updateData.images = imagesArr;
+      updateData.image = imagesArr[0];
+    }
+  } else if (image !== undefined && typeof image === "string" && image.trim()) {
+    updateData.image = image.trim();
+    updateData.images = [image.trim()];
+  }
+
   if (activityTypes !== undefined) {
-    updateData.activityTypes = (activityTypes as string[]).map(mapActivityTypeToEnum);
+    updateData.activityTypes = (activityTypes as string[]).map((s) => mapActivityTypeToEnum(s as ActivityType));
   }
   if (timeOfDays !== undefined) {
-    updateData.timeOfDays = (timeOfDays as string[]).map(mapTimeOfDayToEnum);
+    updateData.timeOfDays = (timeOfDays as string[]).map((s) => mapTimeOfDayToEnum(s as TimeOfDay));
   }
   if (duration !== undefined) {
-    updateData.duration = duration ? mapDurationToEnum(duration as any) : null;
+    updateData.duration = duration ? mapDurationToEnum(duration as Duration) : null;
   }
   if (specials !== undefined) {
-    updateData.specials = (specials as string[]).map(mapSpecialToEnum);
+    updateData.specials = (specials as string[]).map((s) => mapSpecialToEnum(s as Special));
   }
 
   const updated = await prisma.experience.update({

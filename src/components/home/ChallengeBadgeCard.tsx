@@ -5,10 +5,20 @@ import Image from "next/image";
 import styled from "styled-components";
 
 const CardWrap = styled.div`
-  perspective: 800px;
+  perspective: 1000px;
   flex-shrink: 0;
-  width: 260px;
-  height: 320px;
+  width: 300px;
+  height: 380px;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  overflow: visible;
+  border-radius: 32px;
+  isolation: isolate;
+  position: relative;
+  z-index: 0;
+  &:hover {
+    z-index: 1;
+  }
 `;
 
 const CardInner = styled.div<{ $flipped: boolean }>`
@@ -24,10 +34,12 @@ const Face = styled.div`
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
-  border-radius: 28px;
+  -webkit-backface-visibility: hidden;
+  border-radius: 32px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transform: translateZ(0);
   /* glassmorphism */
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px);
@@ -41,7 +53,7 @@ const FaceFront = styled(Face)`
 `;
 
 const FaceBack = styled(Face)`
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(0);
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
@@ -50,20 +62,20 @@ const FaceBack = styled(Face)`
 const TopBar = styled.div<{ $complete: boolean }>`
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
   background: ${({ $complete, theme }) => ($complete ? theme.colors.accent : "rgba(30, 32, 38, 0.9)")};
   color: ${({ $complete, theme }) => ($complete ? theme.colors.onAccent : "#fff")};
 `;
 
 const Icon = styled.div`
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   line-height: 1;
   flex-shrink: 0;
 `;
 
 const TopTitle = styled.span`
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -71,8 +83,8 @@ const TopTitle = styled.span`
 
 const Middle = styled.div`
   flex: 1;
-  min-height: 100px;
-  padding: 1rem;
+  min-height: 140px;
+  padding: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,22 +92,22 @@ const Middle = styled.div`
 
 const Desc = styled.p`
   margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.5;
   color: rgba(255, 255, 255, 0.9);
   text-align: center;
 `;
 
 const BadgeImage = styled.div`
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 200px;
+  height: 200px;
   flex-shrink: 0;
 `;
 
 const BottomBar = styled.div<{ $complete: boolean }>`
-  padding: 0.6rem 1rem;
-  font-size: 0.7rem;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -105,12 +117,12 @@ const BottomBar = styled.div<{ $complete: boolean }>`
 `;
 
 const BackTitle = styled.span`
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: ${({ theme }) => theme.colors.textPrimary};
-  margin-top: 1rem;
+  margin-top: 1.25rem;
   text-align: center;
 `;
 
@@ -120,6 +132,8 @@ export interface ChallengeBadgeCardProps {
   icon: string;
   complete: boolean;
   badgeSrc?: string;
+  /** When !complete, use this instead of "BADGE INCOMPLETE" (e.g. "BADGE AVAILABLE") */
+  incompleteLabel?: string;
 }
 
 export default function ChallengeBadgeCard({
@@ -128,6 +142,7 @@ export default function ChallengeBadgeCard({
   icon,
   complete,
   badgeSrc = "/badge.png",
+  incompleteLabel = "BADGE INCOMPLETE",
 }: ChallengeBadgeCardProps) {
   const [flipped, setFlipped] = useState(false);
 
@@ -152,7 +167,7 @@ export default function ChallengeBadgeCard({
             )}
           </Middle>
           <BottomBar $complete={complete}>
-            {complete ? "BADGE COMPLETED" : "BADGE INCOMPLETE"}
+            {complete ? "BADGE COMPLETED" : incompleteLabel}
           </BottomBar>
         </FaceFront>
         <FaceBack>

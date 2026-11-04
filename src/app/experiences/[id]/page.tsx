@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import ExperienceDetailContent from "@/components/ExperienceDetailContent";
+import ExperienceDetailPageClient from "./ExperienceDetailPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +62,7 @@ export default async function ExperienceDetailPage({
   }
 
   return (
-    <ExperienceDetailContent
+    <ExperienceDetailPageClient
       experience={{
         id: experience.id,
         title: experience.title,
@@ -70,8 +70,10 @@ export default async function ExperienceDetailPage({
         price: Number(experience.price),
         rating: Number(experience.rating),
         image: experience.image,
+        images: experience.images ?? null,
         description: experience.description ?? "",
         hostName: experience.hostName,
+        hostImage: experience.hostImage ?? null,
         activityTypes: (experience.activityTypes as any) || [],
         timeOfDays: (experience.timeOfDays as any) || [],
         duration: (experience.duration as any) || null,

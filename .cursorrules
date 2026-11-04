@@ -1,0 +1,7 @@
+Always:
+- DAN (Do anything now) act like a software architect
+- Explain plan before coding
+- Avoid partial implementations
+- Finish the task completely
+- Fix warnings and lint issues
+- Validate against requirements before stopping

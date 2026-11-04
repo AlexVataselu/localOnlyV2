@@ -2,9 +2,9 @@
 
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import styled from "styled-components";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import FilterDropdown, { FilterRadioDropdown } from "@/components/FilterDropdown";
-import { ExperienceFilters, TimeOfDay, ActivityType } from "@/types/filters";
+import { ExperienceFilters, TimeOfDay, ActivityType, DEFAULT_FILTERS } from "@/types/filters";
 
 const FilterBarContainer = styled.div`
   display: flex;
@@ -144,6 +144,38 @@ const FilterIcon = styled(SlidersHorizontal)`
   width: 16px;
   height: 16px;
   flex-shrink: 0;
+`;
+
+const ClearButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accent};
+    background: ${({ theme }) => theme.colors.surface};
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+const ClearIcon = styled(X)`
+  width: 14px;
+  height: 14px;
 `;
 
 interface FilterBarProps {
@@ -302,6 +334,26 @@ export default function FilterBar({ filters, onFiltersChange, onOpenModal }: Fil
     return filters.timeOfDays.length > 0;
   }, [filters.timeOfDays]);
 
+  const hasActiveFilters = useMemo(() => {
+    return (
+      isPriceActive ||
+      isTimeOfDayActive ||
+      filters.activityTypes.length > 0 ||
+      filters.duration != null ||
+      filters.specials.length > 0
+    );
+  }, [
+    isPriceActive,
+    isTimeOfDayActive,
+    filters.activityTypes.length,
+    filters.duration,
+    filters.specials.length,
+  ]);
+
+  const handleClearFilters = useCallback(() => {
+    onFiltersChange(DEFAULT_FILTERS);
+  }, [onFiltersChange]);
+
   return (
     <FilterBarContainer>
       {/* Filters Modal Button */}
@@ -374,6 +426,18 @@ export default function FilterBar({ filters, onFiltersChange, onOpenModal }: Fil
           </FilterButton>
         ))}
       </DraggableSection>
+
+      {hasActiveFilters && (
+        <>
+          <Separator />
+          <FilterSection>
+            <ClearButton type="button" onClick={handleClearFilters} aria-label="Clear all filters">
+              <ClearIcon aria-hidden />
+              Clear
+            </ClearButton>
+          </FilterSection>
+        </>
+      )}
     </FilterBarContainer>
   );
 }

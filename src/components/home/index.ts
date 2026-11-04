@@ -1,4 +1,3 @@
-export { default as HomeHeader } from "./HomeHeader";
 export { default as HeroSection } from "./HeroSection";
 export { default as FeatureCards } from "./FeatureCards";
 export { default as NewThisWeekSection } from "./NewThisWeekSection";

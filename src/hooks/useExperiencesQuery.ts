@@ -14,14 +14,14 @@ export type ExperiencesPage = {
   maxPrice?: number;
 };
 
-// Serialize filters to create a stable query key
+// Serialize filters to create a stable query key (copy arrays before sort to avoid mutating)
 function serializeFilters(filters?: ExperienceFilters): string {
   if (!filters) return "default";
   return JSON.stringify({
-    activityTypes: filters.activityTypes.sort().join(","),
-    timeOfDays: filters.timeOfDays.sort().join(","),
+    activityTypes: [...filters.activityTypes].sort().join(","),
+    timeOfDays: [...filters.timeOfDays].sort().join(","),
     duration: filters.duration,
-    specials: filters.specials.sort().join(","),
+    specials: [...filters.specials].sort().join(","),
     priceRange: filters.priceRange,
   });
 }
