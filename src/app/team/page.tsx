@@ -7,20 +7,14 @@ import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
 import { CARD_IMAGE_RATIO } from "@/components/ExperienceCard";
 
-const TRAINER_IMAGES = [
-  "/fox.png",
-  "/bear.png",
-  "/lynx.png",
-  "/wolf.png",
-  "/dog.png",
-] as const;
-
-const TRAINERS = Array.from({ length: 9 }, (_, i) => ({
-  name: "Alex Puma",
-  image: TRAINER_IMAGES[i % TRAINER_IMAGES.length],
-  role: "RAIDER TRAINER",
-  price: "from 450 Lei/h",
-}));
+/** The local guides from the home page. */
+const TRAINERS = [
+  { name: "Mihai Bear", image: "/bear.png", role: "Mountain guide · Bucegi", bio: "Twenty winters on the Bucegi ridges. Slow, careful hikes and sunrise climbs." },
+  { name: "Dan Fox", image: "/fox.png", role: "Food guide · Transylvania", bio: "Former cook. Kitchens, cellars and markets from Sibiu to Cluj." },
+  { name: "Alex Puma", image: "/lynx.png", role: "Bike & ski instructor · Prahova Valley", bio: "Technical trails, early starts and riders who are new to both." },
+  { name: "Andrei Wolf", image: "/wolf.png", role: "Wildlife tracker · Piatra Craiului", bio: "Works with local rangers. Small, quiet groups and long evenings in the hide." },
+  { name: "Costi Dog", image: "/dog.png", role: "Boatman · Danube Delta", bio: "Pelicans, fishermen's lunches and channels the big boats can't reach." },
+];
 
 const PageWrapper = styled.div`
   min-height: 100vh;
@@ -120,32 +114,11 @@ const Role = styled.span`
   line-height: 1.3;
 `;
 
-const BottomRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-`;
-
-const StarsContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-`;
-
-const Star = styled.span`
-  font-size: 1rem;
-  color: #ffd700;
-  opacity: 1;
-  line-height: 1;
-`;
-
-const Price = styled.div`
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.accentText};
-  white-space: nowrap;
+const Bio = styled.p`
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const FooterText = styled.p`
@@ -164,17 +137,7 @@ const FooterLink = styled(Link)`
   }
 `;
 
-function TrainerCard({
-  name,
-  image,
-  role,
-  price,
-}: {
-  name: string;
-  image: string;
-  role: string;
-  price: string;
-}) {
+function TrainerCard({ name, image, role, bio }: { name: string; image: string; role: string; bio: string }) {
   return (
     <Card>
       <ImageWrapper>
@@ -190,16 +153,7 @@ function TrainerCard({
       <Info>
         <Name>{name}</Name>
         <Role>{role}</Role>
-        <BottomRow>
-          <StarsContainer role="img" aria-label="Rating 5 out of 5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} aria-hidden="true">
-                ★
-              </Star>
-            ))}
-          </StarsContainer>
-          <Price>{price}</Price>
-        </BottomRow>
+        <Bio>{bio}</Bio>
       </Info>
     </Card>
   );
@@ -212,25 +166,17 @@ export default function TeamPage() {
       <Main>
         <Title>Our Team</Title>
         <Lead>
-          The people behind Locals Only are passionate about connecting travelers with
-          authentic local experiences. We believe in community, sustainability, and
-          adventure.
+          Locals Only is a handful of guides who live where they host. Each of them
+          writes their own listings and leads every group themselves.
         </Lead>
         <Grid>
-          {TRAINERS.map((t, i) => (
-            <TrainerCard
-              key={i}
-              name={t.name}
-              image={t.image}
-              role={t.role}
-              price={t.price}
-            />
+          {TRAINERS.map((t) => (
+            <TrainerCard key={t.name} {...t} />
           ))}
         </Grid>
         <FooterText>
-          Proiect organizat de asociatia Lala Land. Interested in joining the team or
-          becoming a host? Get in touch via our{" "}
-          <FooterLink href="/contact">Contact</FooterLink> page.
+          A project organised by the Lala Land association. Want to join as a host? Get
+          in touch via our <FooterLink href="/contact">Contact</FooterLink> page.
         </FooterText>
       </Main>
       <AppFooter />

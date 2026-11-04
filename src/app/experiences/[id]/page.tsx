@@ -45,6 +45,17 @@ export default async function ExperienceDetailPage({ params }: Props) {
         timeOfDays: experience.timeOfDays,
         duration: experience.duration,
         specials: experience.specials,
+        included: experience.included,
+        toBring: experience.toBring,
+        guestRequirements: experience.guestRequirements,
+        cancellationPolicy: experience.cancellationPolicy,
+        languages: experience.languages,
+        whereDescription: experience.whereDescription,
+        availability: experience.availability,
+        hostBio: experience.hostBio,
+        hostSince: experience.hostSince,
+        reviewCount: experience.reviewCount,
+        reviews: experience.reviews,
       }}
     />
   );

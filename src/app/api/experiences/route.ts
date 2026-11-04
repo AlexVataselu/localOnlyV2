@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { IMAGE_HOSTS, isAllowedImageUrl } from "@/lib/images";
+import { extrasFromBody } from "@/lib/experienceExtras";
 import type { Prisma } from "@prisma/client";
 import {
   mapActivityTypeToEnum,
@@ -225,8 +226,12 @@ export async function POST(req: Request) {
     ? (specials as string[]).map((s) => mapSpecialToEnum(s as Special))
     : [];
 
+  const { included, ...otherExtras } = extrasFromBody(body ?? {});
+
   const experience = await prisma.experience.create({
     data: {
+      ...otherExtras,
+      ...(included ? { included: included as unknown as Prisma.InputJsonValue } : {}),
       title,
       location,
       price: Number(price),

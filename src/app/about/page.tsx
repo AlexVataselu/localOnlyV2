@@ -50,23 +50,27 @@ export default function AboutPage() {
       <Main>
         <Title>About Locals Only</Title>
         <Lead>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-          incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-          nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+          Locals Only is a small marketplace for experiences in Romania, run by the
+          people who live there: guides, cooks, boatmen and instructors who know their
+          valley, village or city better than any guidebook.
         </Lead>
         <Text>
-          Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore
-          eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt
-          in culpa qui officia deserunt mollit anim id est laborum.
+          Every listing is hosted by a local. You book directly with them, in small
+          groups, and the price you see is the price per person in lei. Hosts write
+          their own listings, including what&apos;s included, what to bring and their
+          cancellation policy, so you know what you&apos;re signing up for before you
+          book.
         </Text>
         <Text>
-          Locals Only connects you with unique experiences and authentic hosts. Discover
-          adventures off the beaten path, from mountain trails to local crafts, and
-          create memories that last a lifetime.
+          We started in the Prahova Valley, around Azuga and Bușteni, and are growing
+          slowly into Transylvania and the Danube Delta. If you live somewhere worth
+          showing and want to host, you can apply from the &quot;Host an experience&quot;
+          page.
         </Text>
         <Text>
-          Proiect organizat de asociatia Lala Land. We are committed to supporting local
-          communities and sustainable tourism.
+          Locals Only is a project organised by the Lala Land association. We want the
+          money from tourism to stay with the people and places that make a trip
+          memorable.
         </Text>
       </Main>
       <AppFooter />

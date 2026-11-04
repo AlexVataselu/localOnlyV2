@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { IMAGE_HOSTS, isAllowedImageUrl } from "@/lib/images";
+import { extrasFromBody } from "@/lib/experienceExtras";
 import type { Prisma } from "@prisma/client";
 import { getExperienceById } from "@/lib/experiences";
 import type { ActivityType, TimeOfDay, Duration, Special } from "@/types/filters";
@@ -87,6 +88,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (specials !== undefined) {
     updateData.specials = (specials as string[]).map((s) => mapSpecialToEnum(s as Special));
   }
+
+  const { included, ...otherExtras } = extrasFromBody(body ?? {});
+  Object.assign(updateData, otherExtras);
+  if (included) updateData.included = included as unknown as Prisma.InputJsonValue;
 
   const newImages = [updateData.image, ...((updateData.images as string[] | undefined) ?? [])].filter(
     (u): u is string => typeof u === "string",

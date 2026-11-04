@@ -110,11 +110,10 @@ const Separator = styled.div`
 
 const PRICE_RANGES = [
   { label: "Any price", value: [0, Infinity] as [number, number] },
-  { label: "Under 25 Lei", value: [0, 25] as [number, number] },
-  { label: "25–50 Lei", value: [25, 50] as [number, number] },
-  { label: "50–100 Lei", value: [50, 100] as [number, number] },
-  { label: "100–200 Lei", value: [100, 200] as [number, number] },
-  { label: "200+ Lei", value: [200, Infinity] as [number, number] },
+  { label: "Under 150 Lei", value: [0, 150] as [number, number] },
+  { label: "150–250 Lei", value: [150, 250] as [number, number] },
+  { label: "250–400 Lei", value: [250, 400] as [number, number] },
+  { label: "400+ Lei", value: [400, Infinity] as [number, number] },
 ];
 
 const TIME_OF_DAY_OPTIONS = [

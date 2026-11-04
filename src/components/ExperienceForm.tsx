@@ -2,6 +2,8 @@
 
 import { FormEvent, useState, useEffect } from "react";
 import styled from "styled-components";
+import ExperienceExtrasFields from "@/components/ExperienceExtrasFields";
+import { EMPTY_EXTRAS, type ExperienceExtras } from "@/types/experience";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
@@ -355,7 +357,7 @@ type CreateExperiencePayload = {
   timeOfDays?: TimeOfDay[];
   duration?: Duration | null;
   specials?: Special[];
-};
+} & Partial<ExperienceExtras>;
 
 const GalleryDescRow = styled.div`
   display: grid;
@@ -448,6 +450,7 @@ export default function ExperienceForm({ onClose, onPendingChange }: ExperienceF
   const [timeOfDays, setTimeOfDays] = useState<TimeOfDay[]>([]);
   const [duration, setDuration] = useState<Duration | null>(null);
   const [specials, setSpecials] = useState<Special[]>([]);
+  const [extras, setExtras] = useState<ExperienceExtras>(EMPTY_EXTRAS);
 
   const mutation = useMutation({
     mutationFn: async (payload: CreateExperiencePayload) => {
@@ -522,6 +525,7 @@ export default function ExperienceForm({ onClose, onPendingChange }: ExperienceF
       timeOfDays: timeOfDays.length > 0 ? timeOfDays : undefined,
       duration: duration || undefined,
       specials: specials.length > 0 ? specials : undefined,
+      ...extras,
     };
 
     if (!payload.title || !payload.location || !Number.isFinite(payload.price)) {
@@ -770,6 +774,8 @@ export default function ExperienceForm({ onClose, onPendingChange }: ExperienceF
             </CheckboxGroup>
           </>
         )}
+
+        <ExperienceExtrasFields value={extras} onChange={setExtras} disabled={mutation.isPending} />
 
         {error && <ErrorMessage role="alert">{error}</ErrorMessage>}
         {success && <SuccessMessage role="status">{success}</SuccessMessage>}
