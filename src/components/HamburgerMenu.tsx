@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import { X } from "lucide-react";
@@ -15,7 +15,7 @@ const Overlay = styled.div<{ $open: boolean }>`
   transition: opacity 0.25s ease;
 `;
 
-const Panel = styled.aside<{ $open: boolean }>`
+const Panel = styled.div<{ $open: boolean }>`
   position: fixed;
   top: 0;
   right: 0;
@@ -27,7 +27,9 @@ const Panel = styled.aside<{ $open: boolean }>`
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
   padding: 1.5rem 0;
   transform: translateX(${({ $open }) => ($open ? "0" : "100%")});
-  transition: transform 0.25s ease;
+  /* Hidden (and out of the tab order) once the slide-out finishes. */
+  visibility: ${({ $open }) => ($open ? "visible" : "hidden")};
+  transition: transform 0.25s ease, visibility 0s linear ${({ $open }) => ($open ? "0s" : "0.25s")};
   display: flex;
   flex-direction: column;
 `;
@@ -60,7 +62,7 @@ const CloseBtn = styled.button`
   transition: color 0.2s, background 0.2s;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
     background: rgba(255, 255, 255, 0.06);
   }
 `;
@@ -80,7 +82,7 @@ const MenuLink = styled(Link)`
   transition: color 0.2s, background 0.2s;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
     background: rgba(255, 255, 255, 0.04);
   }
 `;
@@ -106,6 +108,16 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     [onClose]
   );
 
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // Move focus into the menu; give it back to whatever opened it on close.
+    const opener = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    return () => opener?.focus();
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       document.addEventListener("keydown", handleKeyDown);
@@ -120,14 +132,21 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   return (
     <>
       <Overlay $open={isOpen} onClick={onClose} aria-hidden="true" />
-      <Panel $open={isOpen} role="dialog" aria-modal="true" aria-label="Menu">
+      <Panel
+        $open={isOpen}
+        role="dialog"
+        aria-modal={isOpen || undefined}
+        aria-label="Menu"
+        aria-hidden={!isOpen || undefined}
+        inert={!isOpen}
+      >
         <Header>
           <Title>Menu</Title>
-          <CloseBtn type="button" onClick={onClose} aria-label="Close menu">
+          <CloseBtn ref={closeRef} type="button" onClick={onClose} aria-label="Close menu">
             <X size={22} />
           </CloseBtn>
         </Header>
-        <Nav>
+        <Nav aria-label="Site">
           {MENU_ITEMS.map(({ href, label }) => (
             <MenuLink key={href} href={href} onClick={onClose}>
               {label}

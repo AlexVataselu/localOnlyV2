@@ -11,6 +11,12 @@ const FilterBarContainer = styled.div`
   align-items: center;
   padding: 1rem 0;
   flex-wrap: nowrap;
+
+  /* Phones: dropdowns on one row, category chips scroll on their own row (was 502px wide at 375px). */
+  @media (max-width: 760px) {
+    flex-wrap: wrap;
+    row-gap: 0.75rem;
+  }
 `;
 
 const DraggableSection = styled.div<{ $isDragging: boolean }>`
@@ -19,7 +25,13 @@ const DraggableSection = styled.div<{ $isDragging: boolean }>`
   gap: 0.75rem;
   flex-wrap: nowrap;
   flex: 1;
+  min-width: 0;
   overflow-x: auto;
+
+  @media (max-width: 760px) {
+    order: 10;
+    flex-basis: 100%;
+  }
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -43,6 +55,11 @@ const FilterSection = styled.div`
   gap: 0.75rem;
   flex-wrap: nowrap;
   flex-shrink: 0;
+
+  @media (max-width: 760px) {
+    flex-wrap: wrap;
+    flex-shrink: 1;
+  }
 `;
 
 const FilterLabel = styled.span`
@@ -85,15 +102,19 @@ const Separator = styled.div`
   background: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 1rem;
   flex-shrink: 0;
+
+  @media (max-width: 760px) {
+    display: none;
+  }
 `;
 
 const PRICE_RANGES = [
   { label: "Any price", value: [0, Infinity] as [number, number] },
-  { label: "Under $25", value: [0, 25] as [number, number] },
-  { label: "$25 - $50", value: [25, 50] as [number, number] },
-  { label: "$50 - $100", value: [50, 100] as [number, number] },
-  { label: "$100 - $200", value: [100, 200] as [number, number] },
-  { label: "$200+", value: [200, Infinity] as [number, number] },
+  { label: "Under 25 Lei", value: [0, 25] as [number, number] },
+  { label: "25–50 Lei", value: [25, 50] as [number, number] },
+  { label: "50–100 Lei", value: [50, 100] as [number, number] },
+  { label: "100–200 Lei", value: [100, 200] as [number, number] },
+  { label: "200+ Lei", value: [200, Infinity] as [number, number] },
 ];
 
 const TIME_OF_DAY_OPTIONS = [
@@ -164,7 +185,7 @@ const ClearButton = styled.button`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
     background: ${({ theme }) => theme.colors.surface};
   }
 

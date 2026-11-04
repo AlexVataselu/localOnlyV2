@@ -24,6 +24,7 @@ const Button = styled.button`
   min-width: 40px;
   height: 40px;
   padding: 0 0.75rem;
+  white-space: nowrap;
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.textPrimary};

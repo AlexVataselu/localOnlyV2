@@ -36,9 +36,15 @@ const Container = styled.div`
   &:focus-within {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
+
+  /* The inner fields drop their own outline, so the pill shows keyboard focus instead. */
+  &:has(:focus-visible) {
+    outline: 2px solid ${({ theme }) => theme.colors.focus};
+    outline-offset: 2px;
+  }
 `;
 
-const Section = styled.div<{ $focused: boolean; $variant: "anywhere" | "anytime" | "experience" }>`
+const Section = styled.div<{ $focused: boolean; $variant?: "anywhere" | "anytime" | "experience" }>`
   display: flex;
   align-items: center;
   padding: 0 0.5rem;
@@ -97,7 +103,7 @@ const InputExperience = styled(Input)`
   color: #1f1f1f;
 
   &::placeholder {
-    color: #888;
+    color: #6b6b6b; /* 5.3:1 on white (was #888, 3.5:1) */
   }
 `;
 
@@ -215,7 +221,7 @@ const ClearDatesButton = styled.button`
   transition: color 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -340,6 +346,8 @@ export default function SearchBar({
   // Position date picker via portal (avoids clipping by overflow:hidden). Measure on open.
   useLayoutEffect(() => {
     if (!showDatePicker || !anytimeRef.current) {
+      // Measures the trigger in the DOM to position the date picker portal.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPickerPosition(null);
       return;
     }

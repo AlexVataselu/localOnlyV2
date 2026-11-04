@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
-import { Globe, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import AuthButton from "@/components/AuthButton";
 import UploadExperienceButton from "@/components/UploadExperienceButton";
@@ -85,8 +85,12 @@ const LogoLink = styled(Link)`
 `;
 
 const LogoImage = styled(Image)`
-  width: 64px;
+  width: 100px;
   height: auto;
+
+  @media (max-width: 480px) {
+    width: 80px;
+  }
 `;
 
 const Title = styled.h1`
@@ -99,50 +103,25 @@ const Actions = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
+
+  @media (max-width: 480px) {
+    gap: 0.4rem;
+  }
 `;
 
 const BackLink = styled(Link)`
   color: ${({ theme }) => theme.colors.textSecondary};
   text-decoration: none;
   font-size: 1rem;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+  }
   transition: color 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
-  }
-`;
-
-const CurrencyBtn = styled.button`
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: color 0.2s;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.accent};
-  }
-`;
-
-const IconBtn = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  cursor: pointer;
-  border-radius: 8px;
-  transition: color 0.2s, background 0.2s;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.accent};
-    background: rgba(255, 255, 255, 0.06);
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -160,13 +139,15 @@ const MenuBtn = styled.button`
   transition: color 0.2s, background 0.2s;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
-    background: rgba(255, 255, 255, 0.06);
+    color: ${({ theme }) => theme.colors.accentText};
+    background: ${({ theme }) => theme.colors.surface};
   }
 `;
 
 export type AppHeaderProps = {
   title?: string;
+  /** Use "p" on pages that already have their own <h1>, so there is only one per page. */
+  titleAs?: "h1" | "p";
   centerSlot?: React.ReactNode;
   bottomSlot?: React.ReactNode;
   showBackLink?: boolean;
@@ -176,6 +157,7 @@ export type AppHeaderProps = {
 
 export default function AppHeader({
   title = "",
+  titleAs = "h1",
   centerSlot,
   bottomSlot,
   showBackLink = true,
@@ -194,24 +176,20 @@ export default function AppHeader({
             <HeaderLeft>
               <LogoLink href="/">
                 <LogoImage
-                  src="/localsOnlyLogoV4.7Tryangle.png"
+                  src="/logo-locals-only.png"
                   alt="Locals Only"
-                  width={64}
-                  height={64}
+                  width={100}
+                  height={42}
                   priority
                 />
               </LogoLink>
-              {title ? <Title>{title}</Title> : null}
+              {title ? <Title as={titleAs}>{title}</Title> : null}
             </HeaderLeft>
             <HeaderCenter>{centerSlot ?? <HeaderSearchBar />}</HeaderCenter>
             <Actions>
               {showBackLink ? (
                 <BackLink href={backHref}>{backLabel}</BackLink>
               ) : null}
-              <CurrencyBtn type="button">EUR</CurrencyBtn>
-              <IconBtn type="button" aria-label="Language / Region">
-                <Globe size={20} />
-              </IconBtn>
               <ThemeToggle />
               <UploadExperienceButton />
               <AuthButton />

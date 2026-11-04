@@ -121,7 +121,7 @@ export default function ExperienceGrid({ experiences }: ExperienceGridProps) {
       <GridContainer ref={containerRef}>
         <SimpleGrid $columns={safeColumns}>
           {experiences.map((experience) => (
-            <ExperienceCard key={experience.id} experience={experience} />
+            <ExperienceCard key={experience.id} experience={experience} headingLevel="h2" />
           ))}
         </SimpleGrid>
       </GridContainer>

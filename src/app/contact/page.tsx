@@ -116,7 +116,7 @@ const SubmitBtn = styled.button`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -144,7 +144,7 @@ const CardText = styled.p`
 const CardLink = styled.a`
   display: block;
   font-size: 0.95rem;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   text-decoration: none;
   margin-bottom: 0.75rem;
   transition: opacity 0.2s;
@@ -170,7 +170,7 @@ const SocialLink = styled.a`
   transition: color 0.2s;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -193,7 +193,7 @@ export default function ContactPage() {
 
   return (
     <PageWrapper>
-      <AppHeader title="Contact" />
+      <AppHeader title="Contact" titleAs="p" />
       <Main>
         <Grid>
           <FormSection>

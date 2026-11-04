@@ -55,11 +55,15 @@ const ChevronIcon = styled.span<{ $isOpen: boolean }>`
   }
 `;
 
-const DropdownMenu = styled.div<{ $isOpen: boolean }>`
+const DropdownMenu = styled.div<{ $isOpen: boolean; $alignRight?: boolean }>`
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: 0;
+  /* Opens leftwards when there's no room on the right (phones). */
+  ${({ $alignRight }) => ($alignRight ? "right: 0;" : "left: 0;")}
   min-width: 200px;
+  max-width: calc(100vw - 32px);
+  /* Closed menus leave the layout, so they can't widen the page. */
+  display: ${({ $isOpen }) => ($isOpen ? "block" : "none")};
   background: ${({ theme }) => theme.colors.background};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
@@ -150,7 +154,13 @@ export default function FilterDropdown({
   isActive = false,
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const toggle = () => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) setAlignRight(rect.left + 216 > window.innerWidth);
+    setIsOpen(!isOpen);
+  };
 
   const selectedLabel = useMemo(() => {
     if (!value) return label;
@@ -193,12 +203,12 @@ export default function FilterDropdown({
         type="button"
         $isActive={isActive}
         $isOpen={isOpen}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggle}
       >
         {selectedLabel}
         <ChevronIcon $isOpen={isOpen} />
       </DropdownButton>
-      <DropdownMenu $isOpen={isOpen}>
+      <DropdownMenu $isOpen={isOpen} $alignRight={alignRight}>
         {options.map((option) => (
           <DropdownItem
             key={String(option.value)}
@@ -234,7 +244,13 @@ export function FilterRadioDropdown({
   isActive = false,
 }: FilterRadioDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const toggle = () => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) setAlignRight(rect.left + 216 > window.innerWidth);
+    setIsOpen(!isOpen);
+  };
 
   const selectedLabel = value
     ? options.find((opt) => 
@@ -274,12 +290,12 @@ export function FilterRadioDropdown({
         type="button"
         $isActive={isActive}
         $isOpen={isOpen}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggle}
       >
         {selectedLabel}
         <ChevronIcon $isOpen={isOpen} />
       </DropdownButton>
-      <DropdownMenu $isOpen={isOpen}>
+      <DropdownMenu $isOpen={isOpen} $alignRight={alignRight}>
         <RadioGroup>
           {options.map((option) => (
             <RadioOption

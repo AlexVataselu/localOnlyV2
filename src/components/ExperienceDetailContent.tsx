@@ -39,12 +39,15 @@ const PageWrapper = styled.div`
 
   @media (max-width: 1100px) {
     flex-direction: column;
+    /* flex-start here let the column size to its widest content (1760px on phones). */
+    align-items: stretch;
   }
 `;
 
 const MainCol = styled.div`
   flex: 1;
   min-width: 0;
+  max-width: 100%;
 `;
 
 const BookingCol = styled.aside`
@@ -56,6 +59,8 @@ const BookingCol = styled.aside`
   @media (max-width: 1100px) {
     width: 100%;
     position: static;
+    /* On phones, show price and booking right after the photos, not five screens down. */
+    order: -1;
   }
 `;
 
@@ -69,7 +74,7 @@ const HeroTitle = styled.h1`
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-weight: 700;
   margin: 0;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const HeroSecondLine = styled.div`
@@ -93,7 +98,7 @@ const HeroRatingBadge = styled.span`
   align-items: center;
   gap: 4px;
   font-size: 1rem;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const HeroStar = styled.span`
@@ -103,7 +108,7 @@ const HeroStar = styled.span`
 
 const HeroLocationText = styled.span`
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const HeroActionsRow = styled.div`
@@ -119,13 +124,13 @@ const HeaderActionBtn = styled.button`
   padding: 4px 0;
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.95);
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.95rem;
   cursor: pointer;
   transition: color 0.2s;
 
   &:hover {
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
@@ -307,7 +312,7 @@ const ReadMore = styled.button`
   padding: 0;
   border: none;
   background: none;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -417,7 +422,7 @@ const ChooseBtn = styled.button`
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.accent};
   background: transparent;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -478,7 +483,7 @@ const HostRating = styled.div`
 `;
 const Verified = styled.span`
   font-size: 0.8rem;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-weight: 600;
 `;
 const HostBio = styled.p`
@@ -509,7 +514,7 @@ const EditLink = styled.button`
   padding: 0;
   border: none;
   background: none;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 0.9rem;
   cursor: pointer;
   text-decoration: underline;
@@ -577,7 +582,7 @@ const ShowMorePolicy = styled.button`
   padding: 0;
   border: none;
   background: none;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 0.9rem;
   cursor: pointer;
   text-decoration: underline;
@@ -954,6 +959,8 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
 
   useEffect(() => {
     if (!isEditing) {
+      // Reset the edit form to the saved values whenever the experience changes outside edit mode.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTitle(experience.title);
       setLocation(experience.location);
       setPrice(experience.price.toString());
@@ -1341,9 +1348,9 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
           <BookingCard>
             <PriceLead>From {formatPriceWithUnit(experience.price, "Lei")} <PriceUnit>/ person</PriceUnit></PriceLead>
             <BookingLabel>DATES</BookingLabel>
-            <BookingSelect><option>Select dates</option></BookingSelect>
+            <BookingSelect aria-label="Dates"><option>Select dates</option></BookingSelect>
             <BookingLabel>GUESTS</BookingLabel>
-            <BookingSelect><option>1 guest</option><option>2 guests</option><option>3+ guests</option></BookingSelect>
+            <BookingSelect aria-label="Guests"><option>1 guest</option><option>2 guests</option><option>3+ guests</option></BookingSelect>
             <SlotList>
               {MOCK_SLOTS.map((s, i) => (
                 <SlotRow key={i}>

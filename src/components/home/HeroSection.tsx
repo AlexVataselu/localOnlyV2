@@ -70,12 +70,12 @@ const TitleMain = styled.span`
   font-family: "Roboto", sans-serif;
   font-weight: 900;
   font-size: clamp(48px, 12vw, 200px);
-  line-height: 150%;
+  line-height: 1.05; /* 150% made 300px lines that overflowed the hero and clipped under the header */
   text-align: center;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-  text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0px 4px 16px rgba(0, 0, 0, 0.35);
   margin: 0;
 `;
 
@@ -86,12 +86,12 @@ const TitleSub = styled.span<{ $w?: number }>`
   font-family: "Roboto", sans-serif;
   font-weight: 900;
   font-size: clamp(48px, 12vw, 200px);
-  line-height: 150%;
+  line-height: 1.05; /* 150% made 300px lines that overflowed the hero and clipped under the header */
   text-align: center;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-  text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0px 4px 16px rgba(0, 0, 0, 0.35);
   margin: 0;
 `;
 
@@ -104,7 +104,8 @@ const HERO_PADDING = "clamp(24px, 5vw, 80px)";
 
 const HeroNavSide = styled.div<{ $side: "left" | "right" }>`
   position: absolute;
-  top: 50%;
+  /* Above the badge carousel, whose own arrows sit at mid-height on the right. */
+  top: 38%;
   transform: translateY(-50%);
   ${({ $side }) => ($side === "left" ? `left: ${HERO_PADDING};` : `right: ${HERO_PADDING};`)}
   z-index: 10;
@@ -136,21 +137,31 @@ const HeroNavCenter = styled.div`
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0;
   z-index: 10;
 `;
 
+/* 8px dot, 24px tap target. */
 const Dot = styled.button<{ $active: boolean }>`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
   border: none;
-  background: ${({ $active }) => ($active ? "#fff" : "rgba(255,255,255,0.5)")};
+  background: transparent;
   cursor: pointer;
   padding: 0;
-  transition: background 0.2s, transform 0.2s;
 
-  &:hover {
+  &::after {
+    content: "";
+    display: block;
+    width: 8px;
+    height: 8px;
+    margin: auto;
+    border-radius: 50%;
+    background: ${({ $active }) => ($active ? "#fff" : "rgba(255,255,255,0.5)")};
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  &:hover::after {
     transform: scale(1.2);
   }
 `;

@@ -33,7 +33,7 @@ export const useExperiencesQuery = (filters?: ExperienceFilters) => {
     queryKey: ["experiences", stableFiltersKey],
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
-      const params: Record<string, any> = {
+      const params: Record<string, unknown> = {
         page: pageParam,
         limit: PAGE_SIZE,
       };

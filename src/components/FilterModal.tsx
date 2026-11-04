@@ -458,6 +458,8 @@ export default function FilterModal({
     const low = Math.max(minPrice, Math.min(filters.priceRange[0], maxPrice));
     const high = Math.max(minPrice, Math.min(filters.priceRange[1], maxPrice));
     const clamped: [number, number] = [Math.min(low, high), Math.max(low, high)];
+    // Start the draft from the applied filters each time the modal opens.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalFilters({ ...filters, priceRange: clamped });
   }, [filters, isOpen, minPrice, maxPrice]);
 
@@ -562,7 +564,7 @@ export default function FilterModal({
           <PriceSection>
             <PriceTitleRow>
               <SectionTitle>Price</SectionTitle>
-              <SectionSubtitle>Avg. ${averagePrice.toFixed(0)}</SectionSubtitle>
+              <SectionSubtitle>Avg. {Math.round(averagePrice)} Lei</SectionSubtitle>
             </PriceTitleRow>
             <PriceBar>
               <PriceInputWrap>

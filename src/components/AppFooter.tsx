@@ -153,7 +153,7 @@ const NavLink = styled(Link)`
   transition: color 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -187,7 +187,7 @@ const SocialLink = styled.a`
   transition: color 0.2s ease, background 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
     background: rgba(255, 255, 255, 0.12);
   }
 `;

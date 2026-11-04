@@ -1,52 +1,24 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { IMAGE_HOSTS, isAllowedImageUrl } from "@/lib/images";
+import type { Prisma } from "@prisma/client";
+import { getExperienceById } from "@/lib/experiences";
 import type { ActivityType, TimeOfDay, Duration, Special } from "@/types/filters";
 import {
   mapActivityTypeToEnum,
   mapTimeOfDayToEnum,
   mapDurationToEnum,
   mapSpecialToEnum,
-  mapActivityTypeFromEnum,
-  mapTimeOfDayFromEnum,
-  mapDurationFromEnum,
-  mapSpecialFromEnum,
 } from "@/utils/filterMappers";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const experience = await prisma.experience.findUnique({
-    where: { id },
-    include: {
-      host: {
-        select: {
-          id: true,
-          name: true,
-          image: true,
-        },
-      },
-    },
-  });
-
+  const experience = await getExperienceById(id);
   if (!experience) {
     return NextResponse.json({ error: "Experience not found" }, { status: 404 });
   }
-
-  const { host, ...rest } = experience;
-
-  const images =
-    (rest.images?.length ?? 0) > 0 ? rest.images : (rest.image ? [rest.image] : []);
-
-  return NextResponse.json({
-    ...rest,
-    images,
-    hostName: host?.name ?? null,
-    hostImage: host?.image ?? null,
-    activityTypes: (rest.activityTypes || []).map(mapActivityTypeFromEnum),
-    timeOfDays: (rest.timeOfDays || []).map(mapTimeOfDayFromEnum),
-    duration: mapDurationFromEnum(rest.duration),
-    specials: (rest.specials || []).map(mapSpecialFromEnum),
-  });
+  return NextResponse.json(experience);
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -76,7 +48,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     title,
     location,
     price,
-    rating,
     image,
     images: imagesBody,
     description,
@@ -86,11 +57,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     specials,
   } = body ?? {};
 
-  const updateData: any = {
+  const updateData: Prisma.ExperienceUpdateInput = {
     title,
     location,
     price: price !== undefined ? Number(price) : undefined,
-    rating: rating !== undefined ? Number(rating) : undefined,
     description,
   };
 
@@ -116,6 +86,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
   if (specials !== undefined) {
     updateData.specials = (specials as string[]).map((s) => mapSpecialToEnum(s as Special));
+  }
+
+  const newImages = [updateData.image, ...((updateData.images as string[] | undefined) ?? [])].filter(
+    (u): u is string => typeof u === "string",
+  );
+  if (!newImages.every(isAllowedImageUrl)) {
+    return NextResponse.json(
+      { error: `Images must be https links from: ${IMAGE_HOSTS.join(", ")}` },
+      { status: 400 },
+    );
   }
 
   const updated = await prisma.experience.update({

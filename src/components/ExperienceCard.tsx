@@ -82,7 +82,7 @@ const Tag = styled.span`
   &:hover {
     background: rgba(255, 255, 255, 0.15);
     border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -136,11 +136,18 @@ const RatingValue = styled.span`
 const Price = styled.div`
   font-size: 1.2rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   white-space: nowrap;
 `;
 
-function ExperienceCardComponent({ experience }: { experience: Experience }) {
+function ExperienceCardComponent({
+  experience,
+  headingLevel = "h3",
+}: {
+  experience: Experience;
+  /** h2 when cards sit directly under the page's h1 (the listing), h3 under a section heading. */
+  headingLevel?: "h2" | "h3";
+}) {
   const rating = experience.rating;
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
@@ -175,7 +182,7 @@ function ExperienceCardComponent({ experience }: { experience: Experience }) {
       </ImageWrapper>
       <Info>
         <TopSection>
-          <Title>{experience.title}</Title>
+          <Title as={headingLevel}>{experience.title}</Title>
           {tags.length > 0 && (
             <TagsContainer>
               {tags.map((tag, index) => (

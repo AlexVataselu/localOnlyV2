@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import styled from "styled-components";
+import { useElementWidth } from "@/hooks/useElementWidth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ChallengeBadgeCard from "./ChallengeBadgeCard";
 import type { HeroChallenge } from "./heroSlideData";
@@ -55,7 +56,9 @@ const Title = styled.h2`
   margin: 0;
   font-size: clamp(1.35rem, 2.5vw, 1.75rem);
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  /* Sits on the hero photo in both themes, so it stays light. */
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 `;
 
 const NavArrowsWrap = styled.div`
@@ -165,11 +168,11 @@ export default function ChallengeBadgesSlider({
   title = DEFAULT_TITLE,
 }: ChallengeBadgesSliderProps) {
   const [offset, setOffset] = useState(0);
-  const trackRef = useRef<HTMLDivElement>(null);
+  const [trackRef, trackWidth] = useElementWidth<HTMLDivElement>(1400);
 
   const maxScroll = Math.max(
     0,
-    challenges.length * CARD_WIDTH - (trackRef.current?.clientWidth ?? 1400) + 48
+    challenges.length * CARD_WIDTH - (trackWidth) + 48
   );
 
   const canGoLeft = offset < 0;

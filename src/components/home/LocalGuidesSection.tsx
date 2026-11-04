@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
+import { useElementWidth } from "@/hooks/useElementWidth";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
 const Section = styled.section`
@@ -159,7 +160,7 @@ const Role = styled.span`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
 `;
 
 const Rating = styled.div`
@@ -191,8 +192,8 @@ const CARD_STEP = 260 + 24;
 
 export default function LocalGuidesSection() {
   const [offset, setOffset] = useState(0);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const containerWidth = trackRef.current?.clientWidth ?? 900;
+  const [trackRef, trackWidth] = useElementWidth<HTMLDivElement>(900);
+  const containerWidth = trackWidth;
   const totalWidth = GUIDES.length * CARD_STEP - 24;
   const maxScroll = Math.max(0, totalWidth - containerWidth + 48);
   const canGoLeft = offset < 0;
@@ -246,7 +247,7 @@ export default function LocalGuidesSection() {
                   </Row>
                   <Row>
                     <Role>{g.role}</Role>
-                    <Price>from {g.price} Ron/h</Price>
+                    <Price>from {g.price} Lei/h</Price>
                   </Row>
                 </Info>
               </Card>

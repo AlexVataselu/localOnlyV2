@@ -46,7 +46,7 @@ const Text = styled.p`
 export default function AboutPage() {
   return (
     <PageWrapper>
-      <AppHeader title="About" />
+      <AppHeader title="About" titleAs="p" />
       <Main>
         <Title>About Locals Only</Title>
         <Lead>

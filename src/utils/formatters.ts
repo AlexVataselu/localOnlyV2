@@ -1,5 +1,6 @@
+/** One currency everywhere: prices are in Romanian lei. */
 export const formatPrice = (price: number): string => {
-  return `$${price.toFixed(2)}`;
+  return `${Math.round(price)} Lei`;
 };
 
 /** e.g. "300 Lei" or "100 eur". For "From X / person" use: `From ${formatPriceWithUnit(price, unit)} / person` */

@@ -19,7 +19,7 @@ const TRAINERS = Array.from({ length: 9 }, (_, i) => ({
   name: "Alex Puma",
   image: TRAINER_IMAGES[i % TRAINER_IMAGES.length],
   role: "RAIDER TRAINER",
-  price: "from 450 Ron/h",
+  price: "from 450 Lei/h",
 }));
 
 const PageWrapper = styled.div`
@@ -105,7 +105,7 @@ const Info = styled.div`
   justify-content: space-between;
 `;
 
-const Name = styled.h3`
+const Name = styled.h2`
   margin: 0;
   font-size: 1.2rem;
   font-weight: 600;
@@ -116,7 +116,7 @@ const Name = styled.h3`
 const Role = styled.span`
   font-size: 0.9rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   line-height: 1.3;
 `;
 
@@ -144,7 +144,7 @@ const Star = styled.span`
 const Price = styled.div`
   font-size: 1.2rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   white-space: nowrap;
 `;
 
@@ -160,7 +160,7 @@ const FooterLink = styled(Link)`
   text-decoration: underline;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -191,7 +191,7 @@ function TrainerCard({
         <Name>{name}</Name>
         <Role>{role}</Role>
         <BottomRow>
-          <StarsContainer aria-label="Rating 5 out of 5">
+          <StarsContainer role="img" aria-label="Rating 5 out of 5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star key={i} aria-hidden="true">
                 ★
@@ -208,7 +208,7 @@ function TrainerCard({
 export default function TeamPage() {
   return (
     <PageWrapper>
-      <AppHeader title="Team" />
+      <AppHeader title="Team" titleAs="p" />
       <Main>
         <Title>Our Team</Title>
         <Lead>

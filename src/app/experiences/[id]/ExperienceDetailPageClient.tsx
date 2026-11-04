@@ -14,7 +14,9 @@ export default function ExperienceDetailPageClient({ experience }: Props) {
         backHref="/experiences"
         backLabel="← Back to Experiences"
       />
-      <ExperienceDetailContent experience={experience} />
+      <main id="main">
+        <ExperienceDetailContent experience={experience} />
+      </main>
       <AppFooter />
     </>
   );

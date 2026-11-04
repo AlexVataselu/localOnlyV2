@@ -164,7 +164,7 @@ const CancelButton = styled.button`
 `;
 
 const ErrorMessage = styled.p`
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 0.9rem;
 `;
 
@@ -348,7 +348,6 @@ type CreateExperiencePayload = {
   title: string;
   location: string;
   price: number;
-  rating: number;
   image?: string;
   images?: string[];
   description?: string;
@@ -405,7 +404,7 @@ const RemoveImageBtn = styled.button`
   transition: color 0.2s, border-color 0.2s;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
     border-color: ${({ theme }) => theme.colors.accent};
   }
 `;
@@ -425,7 +424,7 @@ const AddImageBtn = styled.button`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -517,7 +516,6 @@ export default function ExperienceForm({ onClose, onPendingChange }: ExperienceF
       title: String(formData.get("title") ?? "").trim(),
       location: String(formData.get("location") ?? "").trim(),
       price: Number(formData.get("price")),
-      rating: Number(formData.get("rating")),
       images: images.length > 0 ? images : undefined,
       description: String(formData.get("description") ?? "").trim() || undefined,
       activityTypes: activityTypes.length > 0 ? activityTypes : undefined,
@@ -526,8 +524,8 @@ export default function ExperienceForm({ onClose, onPendingChange }: ExperienceF
       specials: specials.length > 0 ? specials : undefined,
     };
 
-    if (!payload.title || !payload.location || !Number.isFinite(payload.price) || !Number.isFinite(payload.rating)) {
-      setError("Title, location, price, and rating are required.");
+    if (!payload.title || !payload.location || !Number.isFinite(payload.price)) {
+      setError("Title, location and price are required.");
       setSuccess(null);
       return;
     }
@@ -560,12 +558,8 @@ export default function ExperienceForm({ onClose, onPendingChange }: ExperienceF
               <Input id="location" name="location" placeholder="Lisbon, Portugal" required disabled={mutation.isPending} />
             </Field>
             <Field $compact>
-              <Label htmlFor="price">Price (USD)</Label>
-              <Input id="price" name="price" type="number" min="0" step="0.01" placeholder="150" required disabled={mutation.isPending} />
-            </Field>
-            <Field $compact>
-              <Label htmlFor="rating">Rating (0-5)</Label>
-              <Input id="rating" name="rating" type="number" min="0" max="5" step="0.1" placeholder="4.8" required disabled={mutation.isPending} />
+              <Label htmlFor="price">Price per person (lei)</Label>
+              <Input id="price" name="price" type="number" min="0" step="1" placeholder="150" required disabled={mutation.isPending} />
             </Field>
           </FormRow>
         ) : (
@@ -579,12 +573,8 @@ export default function ExperienceForm({ onClose, onPendingChange }: ExperienceF
               <Input id="location" name="location" placeholder="Lisbon, Portugal" required disabled={mutation.isPending} />
             </Field>
             <Field>
-              <Label htmlFor="price">Price (USD)</Label>
-              <Input id="price" name="price" type="number" min="0" step="0.01" placeholder="150" required disabled={mutation.isPending} />
-            </Field>
-            <Field>
-              <Label htmlFor="rating">Rating (0-5)</Label>
-              <Input id="rating" name="rating" type="number" min="0" max="5" step="0.1" placeholder="4.8" required disabled={mutation.isPending} />
+              <Label htmlFor="price">Price per person (lei)</Label>
+              <Input id="price" name="price" type="number" min="0" step="1" placeholder="150" required disabled={mutation.isPending} />
             </Field>
           </>
         )}
