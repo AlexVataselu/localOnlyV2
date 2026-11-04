@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
+import { useElementWidth } from "@/hooks/useElementWidth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useExperiencesQuery } from "@/hooks/useExperiencesQuery";
 import ExperienceCard from "@/components/ExperienceCard";
@@ -95,7 +96,7 @@ const NavArrowBtn = styled.button<{ $active?: boolean }>`
 const ShowAllLink = styled(Link)`
   font-size: 0.95rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   text-decoration: none;
   transition: color 0.2s;
 
@@ -122,9 +123,15 @@ const List = styled.div<{ $offset: number }>`
   transition: transform 0.35s ease;
 `;
 
+/* Stretch every card to the tallest one in the row so they line up. */
 const CardSlot = styled.div`
   flex: 0 0 380px;
   min-width: 0;
+  display: flex;
+
+  & > * {
+    flex: 1;
+  }
 
   @media (max-width: 900px) {
     flex: 0 0 300px;
@@ -143,11 +150,11 @@ const CARD_STEP = 380 + 24; // CardSlot flex-basis + gap
 
 export default function NewThisWeekSection() {
   const [offset, setOffset] = useState(0);
-  const trackRef = useRef<HTMLDivElement>(null);
+  const [trackRef, trackWidth] = useElementWidth<HTMLDivElement>(900);
   const { data, isLoading } = useExperiencesQuery(DEFAULT_FILTERS);
 
   const experiences: Experience[] = (data?.pages?.[0]?.items ?? []).slice(0, 8);
-  const containerWidth = trackRef.current?.clientWidth ?? 900;
+  const containerWidth = trackWidth;
   const totalWidth = experiences.length * CARD_STEP - 24;
   const maxScroll = Math.max(0, totalWidth - containerWidth + 48);
 

@@ -56,7 +56,7 @@ const List = styled.ul`
 export default function PrivacyPolicyPage() {
   return (
     <PageWrapper>
-      <AppHeader title="Privacy Policy" />
+      <AppHeader title="Privacy Policy" titleAs="p" />
       <Main>
         <Title>Politica de Confidențialitate</Title>
 

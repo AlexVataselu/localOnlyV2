@@ -12,6 +12,10 @@ declare module "styled-components" {
       onAccent: string;
       border: string;
       cardBackground: string;
+      accentText: string;
+      glass: string;
+      glassBorder: string;
+      focus: string;
     };
     shadows: {
       card: string;

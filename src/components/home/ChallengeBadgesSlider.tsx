@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import styled from "styled-components";
+import { useElementWidth } from "@/hooks/useElementWidth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ChallengeBadgeCard from "./ChallengeBadgeCard";
 import type { HeroChallenge } from "./heroSlideData";
@@ -55,7 +56,9 @@ const Title = styled.h2`
   margin: 0;
   font-size: clamp(1.35rem, 2.5vw, 1.75rem);
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  /* Sits on the hero photo in both themes, so it stays light. */
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 `;
 
 const NavArrowsWrap = styled.div`
@@ -88,12 +91,12 @@ const NavBtn = styled.button<{ $active?: boolean }>`
   }
 `;
 
-const SliderWrap = styled.div`
+const SliderWrap = styled.div<{ $dense?: boolean }>`
   width: 100%;
   position: relative;
   overflow: hidden;
-  padding-top: 2.25rem;
-  padding-bottom: 2.25rem;
+  padding-top: ${({ $dense }) => ($dense ? "0" : "2.25rem")};
+  padding-bottom: ${({ $dense }) => ($dense ? "0" : "2.25rem")};
 `;
 
 const Track = styled.div`
@@ -156,6 +159,8 @@ export interface ChallengeBadgesSliderProps {
   challenges?: HeroChallenge[];
   /** Section title above the badge slider. */
   title?: string;
+  /** Less space around the cards, for when the slider sits inside the hero. */
+  dense?: boolean;
 }
 
 const DEFAULT_TITLE = "Challenge your friends and earn badges";
@@ -163,13 +168,14 @@ const DEFAULT_TITLE = "Challenge your friends and earn badges";
 export default function ChallengeBadgesSlider({
   challenges = DEFAULT_CHALLENGES,
   title = DEFAULT_TITLE,
+  dense = false,
 }: ChallengeBadgesSliderProps) {
   const [offset, setOffset] = useState(0);
-  const trackRef = useRef<HTMLDivElement>(null);
+  const [trackRef, trackWidth] = useElementWidth<HTMLDivElement>(1400);
 
   const maxScroll = Math.max(
     0,
-    challenges.length * CARD_WIDTH - (trackRef.current?.clientWidth ?? 1400) + 48
+    challenges.length * CARD_WIDTH - (trackWidth) + 48
   );
 
   const canGoLeft = offset < 0;
@@ -206,7 +212,7 @@ export default function ChallengeBadgesSlider({
           </NavBtn>
         </NavArrowsWrap>
       </Header>
-      <SliderWrap>
+      <SliderWrap $dense={dense}>
         <Track ref={trackRef}>
           <List $offset={offset}>
             {challenges.map((c) => (

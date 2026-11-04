@@ -53,6 +53,8 @@ export function Providers({ children }: PropsWithChildren) {
     const storedTheme = window.localStorage.getItem("theme-mode");
 
     if (storedTheme === "light" || storedTheme === "dark") {
+      // Reads localStorage after mount: unavailable during server render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setThemeMode(storedTheme);
     }
   }, []);

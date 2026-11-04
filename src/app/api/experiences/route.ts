@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { IMAGE_HOSTS, isAllowedImageUrl } from "@/lib/images";
+import { extrasFromBody } from "@/lib/experienceExtras";
+import type { Prisma } from "@prisma/client";
 import {
   mapActivityTypeToEnum,
   mapTimeOfDayToEnum,
@@ -53,17 +56,14 @@ export async function GET(request: Request) {
   const skip = (page - 1) * limit;
 
   // Build where clause for filters
-  const where: any = {};
+  const where: Prisma.ExperienceWhereInput = {};
 
   // Price range filter
   if (minPriceParam !== null || maxPriceParam !== null) {
-    where.price = {};
-    if (minPriceParam !== null) {
-      where.price.gte = Number(minPriceParam);
-    }
-    if (maxPriceParam !== null) {
-      where.price.lte = Number(maxPriceParam);
-    }
+    const price: Prisma.FloatFilter = {};
+    if (minPriceParam !== null) price.gte = Number(minPriceParam);
+    if (maxPriceParam !== null) price.lte = Number(maxPriceParam);
+    where.price = price;
   }
 
   // Activity types filter (using hasSome for array contains any)
@@ -178,7 +178,6 @@ export async function POST(req: Request) {
     title,
     location,
     price,
-    rating,
     image,
     images: imagesBody,
     description,
@@ -191,9 +190,9 @@ export async function POST(req: Request) {
   const imagesArr = Array.isArray(imagesBody) ? (imagesBody as string[]).filter((u): u is string => typeof u === "string" && u.trim().length > 0) : [];
   const coverImage = imagesArr.length > 0 ? imagesArr[0] : (typeof image === "string" ? image.trim() : "");
 
-  if (!title || !location || !price || !rating) {
+  if (!title || !location || !price) {
     return NextResponse.json(
-      { error: "Missing required fields: title, location, price, rating" },
+      { error: "Missing required fields: title, location, price" },
       { status: 400 },
     );
   }
@@ -207,6 +206,14 @@ export async function POST(req: Request) {
 
   const imagesToStore = imagesArr.length > 0 ? imagesArr : [coverImage];
 
+  // next/image can only render these hosts; anything else would break the listing page.
+  if (!imagesToStore.every(isAllowedImageUrl)) {
+    return NextResponse.json(
+      { error: `Images must be https links from: ${IMAGE_HOSTS.join(", ")}` },
+      { status: 400 },
+    );
+  }
+
   // Map filter fields if provided
   const mappedActivityTypes = activityTypes
     ? (activityTypes as string[]).map((s) => mapActivityTypeToEnum(s as ActivityType))
@@ -219,19 +226,24 @@ export async function POST(req: Request) {
     ? (specials as string[]).map((s) => mapSpecialToEnum(s as Special))
     : [];
 
+  const { included, ...otherExtras } = extrasFromBody(body ?? {});
+
   const experience = await prisma.experience.create({
     data: {
+      ...otherExtras,
+      ...(included ? { included: included as unknown as Prisma.InputJsonValue } : {}),
       title,
       location,
       price: Number(price),
-      rating: Number(rating),
+      // New listings start unrated; hosts can't set their own rating.
+      rating: 0,
       image: coverImage,
       images: imagesToStore,
       description,
-      activityTypes: mappedActivityTypes as any,
-      timeOfDays: mappedTimeOfDays as any,
-      duration: mappedDuration as any,
-      specials: mappedSpecials as any,
+      activityTypes: mappedActivityTypes,
+      timeOfDays: mappedTimeOfDays,
+      duration: mappedDuration,
+      specials: mappedSpecials,
       userId: session.user.id,
     },
   });

@@ -37,7 +37,7 @@ const FooterMain = styled.div`
   gap: 3rem;
   box-sizing: border-box;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1180px) {
     flex-direction: column;
     align-items: center;
     text-align: center;
@@ -53,7 +53,7 @@ const LogoBlock = styled.div`
   gap: 1rem;
   flex-shrink: 0;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1180px) {
     flex-direction: column;
     align-items: center;
   }
@@ -153,7 +153,7 @@ const NavLink = styled(Link)`
   transition: color 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -187,7 +187,7 @@ const SocialLink = styled.a`
   transition: color 0.2s ease, background 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
     background: rgba(255, 255, 255, 0.12);
   }
 `;

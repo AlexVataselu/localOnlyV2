@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import styled from "styled-components";
+import ExperienceExtrasFields from "@/components/ExperienceExtrasFields";
 import { Share2, Heart, ChevronLeft, ChevronRight, X, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -19,7 +20,7 @@ import {
   Duration,
   Special,
 } from "@/types/filters";
-import type { Experience } from "@/types/experience";
+import type { Experience, ExperienceExtras, ExperienceReview } from "@/types/experience";
 import ChallengeBadgeCard from "@/components/home/ChallengeBadgeCard";
 import ExperienceCard from "@/components/ExperienceCard";
 
@@ -39,12 +40,15 @@ const PageWrapper = styled.div`
 
   @media (max-width: 1100px) {
     flex-direction: column;
+    /* flex-start here let the column size to its widest content (1760px on phones). */
+    align-items: stretch;
   }
 `;
 
 const MainCol = styled.div`
   flex: 1;
   min-width: 0;
+  max-width: 100%;
 `;
 
 const BookingCol = styled.aside`
@@ -56,6 +60,8 @@ const BookingCol = styled.aside`
   @media (max-width: 1100px) {
     width: 100%;
     position: static;
+    /* On phones, show price and booking right after the photos, not five screens down. */
+    order: -1;
   }
 `;
 
@@ -69,7 +75,7 @@ const HeroTitle = styled.h1`
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-weight: 700;
   margin: 0;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const HeroSecondLine = styled.div`
@@ -93,7 +99,7 @@ const HeroRatingBadge = styled.span`
   align-items: center;
   gap: 4px;
   font-size: 1rem;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const HeroStar = styled.span`
@@ -103,7 +109,7 @@ const HeroStar = styled.span`
 
 const HeroLocationText = styled.span`
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const HeroActionsRow = styled.div`
@@ -119,13 +125,13 @@ const HeaderActionBtn = styled.button`
   padding: 4px 0;
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.95);
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.95rem;
   cursor: pointer;
   transition: color 0.2s;
 
   &:hover {
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
@@ -307,7 +313,7 @@ const ReadMore = styled.button`
   padding: 0;
   border: none;
   background: none;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -417,7 +423,7 @@ const ChooseBtn = styled.button`
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.accent};
   background: transparent;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -426,19 +432,6 @@ const ChooseBtn = styled.button`
     background: ${({ theme }) => theme.colors.accent};
     color: ${({ theme }) => theme.colors.onAccent};
   }
-`;
-const ShowMoreDates = styled.button`
-  width: 100%;
-  margin-top: 1rem;
-  padding: 12px;
-  border: 1px dashed ${({ theme }) => theme.colors.border};
-  border-radius: 10px;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 0.9rem;
-  cursor: pointer;
-
-  &:hover { border-color: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 // ---------- Meet Your Host ----------
@@ -476,11 +469,6 @@ const HostRating = styled.div`
   font-size: 0.95rem;
   margin-bottom: 0.5rem;
 `;
-const Verified = styled.span`
-  font-size: 0.8rem;
-  color: ${({ theme }) => theme.colors.accent};
-  font-weight: 600;
-`;
 const HostBio = styled.p`
   margin: 0 0 1rem 0;
   font-size: 0.95rem;
@@ -509,7 +497,7 @@ const EditLink = styled.button`
   padding: 0;
   border: none;
   background: none;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 0.9rem;
   cursor: pointer;
   text-decoration: underline;
@@ -521,34 +509,27 @@ const MapSection = styled.section`
   padding-top: 2rem;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
 `;
-const MapPlaceholder = styled.div`
+const MapFrame = styled.div`
+  position: relative;
   width: 100%;
-  aspect-ratio: 2/1;
+  aspect-ratio: 2 / 1;
   border-radius: 16px;
   overflow: hidden;
-  background: url("/map.png") center / cover no-repeat;
-  position: relative;
   margin-bottom: 1rem;
-`;
-const MapMetrics = styled.div`
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-top: -40px;
-  position: relative;
-  z-index: 2;
-  padding: 0 1rem;
-`;
-const Metric = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.surface};
+
+  iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  @media (max-width: 720px) {
+    aspect-ratio: 4 / 3;
+  }
 `;
 const MapDesc = styled.p`
   margin: 1rem 0 0 0;
@@ -571,16 +552,6 @@ const ThingsList = styled.ul`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.7;
-`;
-const ShowMorePolicy = styled.button`
-  margin-top: 0.5rem;
-  padding: 0;
-  border: none;
-  background: none;
-  color: ${({ theme }) => theme.colors.accent};
-  font-size: 0.9rem;
-  cursor: pointer;
-  text-decoration: underline;
 `;
 
 // ---------- Sliders (Badges, Reviews, Similar) ----------
@@ -623,6 +594,16 @@ const SliderNavBtn = styled.button<{ $disabled?: boolean }>`
 const SliderTrack = styled.div`
   overflow: hidden;
 `;
+/* Every similar card stretches to the tallest one, so the row lines up. */
+const SimilarSlot = styled.div`
+  flex: 0 0 280px;
+  display: flex;
+
+  & > * {
+    flex: 1;
+  }
+`;
+
 const SliderList = styled.div<{ $offset: number }>`
   display: flex;
   gap: 1rem;
@@ -768,35 +749,31 @@ const CancelButton = styled.button`
   &:hover { background: ${({ theme }) => theme.colors.surface}; }
 `;
 
-// ---------- Mock / default data ----------
-const WHATS_INCLUDED = [
-  { icon: "☕", title: "Drinks", items: ["Bottle of water", "Tea"] },
-  { icon: "🍽️", title: "Food", items: ["Soup", "Sandwich", "Power bars"] },
-  { icon: "🚐", title: "Transport", items: ["ATV shuttle", "Gondola"] },
-  { icon: "⛑️", title: "Gear", items: ["Full Suspension E-Bike", "Full Face Helmet"] },
-  { icon: "⛺", title: "Rest area", items: ["Mountain cabin", "Spring area"] },
-];
+// ---------- Per-listing details ----------
+// Everything below the description comes from the experience record; a section with no data is hidden.
 
-const MOCK_SLOTS = [
-  { label: "Mon, Oct 16, 4:00 PM - 7:00 PM", price: 300 },
-  { label: "Tue, Oct 17, 9:00 AM - 12:00 PM", price: 300 },
-  { label: "Wed, Oct 18, 2:00 PM - 5:00 PM", price: 300 },
+const INCLUDED_ICONS: Array<[RegExp, string]> = [
+  [/drink|water|coffee|tea|wine/i, "☕"],
+  [/food|meal|lunch|snack|tasting/i, "🍽️"],
+  [/transport|transfer|shuttle|pick/i, "🚐"],
+  [/gear|equipment|bike|kayak|helmet/i, "⛑️"],
+  [/rest|cabin|stay|accommodation|lodg/i, "⛺"],
 ];
+const includedIcon = (title: string) => INCLUDED_ICONS.find(([re]) => re.test(title))?.[1] ?? "✔️";
 
-const MOCK_REVIEWS = [
-  { name: "Alex M.", since: "Host on Locals Only since 2021", text: "An incredible ride with stunning views. Our host was knowledgeable and made sure everyone felt safe. Highly recommend!", avatar: null },
-  { name: "Maria K.", since: "Guest", text: "One of the best experiences I've had. The Transfăgărășan road is breathtaking and the e-bikes were top quality.", avatar: null },
-];
-
-const BADGES_FOR_ACTIVITY = [
-  { id: "o1", title: "Orienteering", description: "Adaptability, quick decision-making in varying terrain.", icon: "🧭", complete: true },
-  { id: "o2", title: "Orienteering", description: "Adaptability, quick decision-making in varying terrain.", icon: "🧭", complete: false, incompleteLabel: "BADGE AVAILABLE" },
-  { id: "mb1", title: "Mountain Biking", description: "Technical skills, balance, and trail awareness.", icon: "🚴", complete: false, incompleteLabel: "BADGE AVAILABLE" },
-];
-
-const GUEST_REQUIREMENTS = ["Guests ages 14 and up", "Up to 6 guests total", "Locals Only's health and safety guidelines apply", "Activity level is moderate", "The need for adventure"];
-const WHAT_TO_BRING = ["Backpack", "Mountain shoes", "Windproof, waterproof jacket", "Comfortable sport clothes"];
-const CANCELLATION = "Full refund if you cancel at least 7 days before the experience start time, or within 24 hours of booking if the experience is more than 48 hours away.";
+/** Badges a guest can work towards, by activity type. None are "completed": there is no progress tracking yet. */
+const BADGES_BY_ACTIVITY: Record<string, Array<{ id: string; title: string; description: string; icon: string }>> = {
+  "Nature and Outdoors": [
+    { id: "orienteering", title: "Orienteering", description: "Adaptability, quick decision-making in varying terrain.", icon: "🧭" },
+    { id: "foraging", title: "Foraging", description: "Knowledge of the environment and identifying plants and fungi.", icon: "🫐" },
+  ],
+  Sports: [
+    { id: "mountain-biking", title: "Mountain Biking", description: "Technical skills, balance, and trail awareness.", icon: "🚴" },
+    { id: "trail-running", title: "Trail Running", description: "Endurance and agility on varied, technical terrain.", icon: "🏃" },
+  ],
+  "Food and drink": [{ id: "honey-hunter", title: "Honey Hunter", description: "Find local flavours and the people who make them.", icon: "🍯" }],
+  Wellness: [{ id: "bird-watching", title: "Bird Watching", description: "Patience, attention to detail, and knowledge of local species.", icon: "🐦" }],
+};
 
 // ---------- Edit form: multi-image ----------
 const ImageRow = styled.div`
@@ -840,6 +817,17 @@ const AddImageBtn = styled.button`
 `;
 
 // ---------- Props ----------
+/** The editable per-listing details of an experience, with empty defaults. */
+const extrasOf = (e: Partial<ExperienceExtras>): ExperienceExtras => ({
+  included: e.included ?? [],
+  toBring: e.toBring ?? [],
+  guestRequirements: e.guestRequirements ?? [],
+  cancellationPolicy: e.cancellationPolicy ?? null,
+  languages: e.languages ?? [],
+  whereDescription: e.whereDescription ?? null,
+  availability: e.availability ?? [],
+});
+
 type ExperienceDetailProps = {
   experience: {
     id: string;
@@ -856,7 +844,11 @@ type ExperienceDetailProps = {
     timeOfDays?: TimeOfDay[];
     duration?: Duration | null;
     specials?: Special[];
-  };
+    hostBio?: string | null;
+    hostSince?: number | null;
+    reviewCount?: number;
+    reviews?: ExperienceReview[];
+  } & Partial<ExperienceExtras>;
 };
 
 export default function ExperienceDetailContent({ experience }: ExperienceDetailProps) {
@@ -875,11 +867,11 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
   const [timeOfDays, setTimeOfDays] = useState<TimeOfDay[]>(experience.timeOfDays || []);
   const [duration, setDuration] = useState<Duration | null>(experience.duration || null);
   const [specials, setSpecials] = useState<Special[]>(experience.specials || []);
+  const [extras, setExtras] = useState<ExperienceExtras>(() => extrasOf(experience));
   const [saved, setSaved] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [readMore, setReadMore] = useState(false);
-  const [showMorePolicy, setShowMorePolicy] = useState(false);
   const [badgeOffset, setBadgeOffset] = useState(0);
   const [reviewOffset, setReviewOffset] = useState(0);
   const [similarOffset, setSimilarOffset] = useState(0);
@@ -889,7 +881,17 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
   const similarRef = useRef<HTMLDivElement>(null);
 
   const isHost = session?.user?.role === "HOST";
-  const reviewCount = Math.max(1, Math.round(experience.rating * 12));
+  const reviewCount = experience.reviewCount ?? experience.reviews?.length ?? 0;
+  const reviews = experience.reviews ?? [];
+  const included = experience.included ?? [];
+  const toBring = experience.toBring ?? [];
+  const guestRequirements = experience.guestRequirements ?? [];
+  const availability = experience.availability ?? [];
+  const languages = experience.languages ?? [];
+  const badges = Array.from(
+    new Map((experience.activityTypes ?? []).flatMap((t) => BADGES_BY_ACTIVITY[t] ?? []).map((b) => [b.id, b])).values(),
+  );
+  const mapQuery = encodeURIComponent(`${experience.location}, Romania`);
   const descShort = 280;
   const needReadMore = (experience.description?.length ?? 0) > descShort;
   const descToShow = readMore || !needReadMore ? (experience.description ?? "") : (experience.description ?? "").slice(0, descShort) + "…";
@@ -936,8 +938,9 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
       timeOfDays: timeOfDays.length ? timeOfDays : [],
       duration: duration || null,
       specials: specials.length ? specials : [],
+      ...extras,
     });
-  }, [title, location, price, images, description, activityTypes, timeOfDays, duration, specials, updateMutation, experience.id, experience.image]);
+  }, [title, location, price, images, description, activityTypes, timeOfDays, duration, specials, extras, updateMutation, experience.image]);
 
   const handleCancel = useCallback(() => {
     setTitle(experience.title);
@@ -949,11 +952,14 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
     setTimeOfDays(experience.timeOfDays || []);
     setDuration(experience.duration || null);
     setSpecials(experience.specials || []);
+    setExtras(extrasOf(experience));
     setIsEditing(false);
   }, [experience]);
 
   useEffect(() => {
     if (!isEditing) {
+      // Reset the edit form to the saved values whenever the experience changes outside edit mode.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTitle(experience.title);
       setLocation(experience.location);
       setPrice(experience.price.toString());
@@ -963,6 +969,7 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
       setTimeOfDays(experience.timeOfDays || []);
       setDuration(experience.duration || null);
       setSpecials(experience.specials || []);
+      setExtras(extrasOf(experience));
     }
   }, [experience, isEditing]);
 
@@ -1104,6 +1111,7 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
                 ))}
               </CheckboxGroup>
             </Field>
+            <ExperienceExtrasFields key={experience.id} value={extras} onChange={setExtras} disabled={updateMutation.isPending} />
             <EditActions>
               <SaveButton onClick={handleSave} disabled={updateMutation.isPending}>{updateMutation.isPending ? "Saving..." : "Save"}</SaveButton>
               <CancelButton onClick={handleCancel} disabled={updateMutation.isPending}>Cancel</CancelButton>
@@ -1129,7 +1137,7 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
             <HeroMetaLeft>
               <HeroRatingBadge>
                 <HeroStar>★</HeroStar>
-                {experience.rating.toFixed(1)} ({reviewCount} Reviews)
+                {reviewCount > 0 ? `${experience.rating.toFixed(1)} (${reviewCount} ${reviewCount === 1 ? "review" : "reviews"})` : "New"}
               </HeroRatingBadge>
               <HeroLocationText> · {experience.location}</HeroLocationText>
             </HeroMetaLeft>
@@ -1179,7 +1187,7 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
           </HostRow>
         )}
         <MetaLine>
-          {experience.duration ?? "3 hours"} · Hosted in English and Romanian
+          {[experience.duration, languages.length ? `Hosted in ${languages.join(" and ")}` : null].filter(Boolean).join(" · ")}
         </MetaLine>
 
         <SectionTitle>What we&apos;ll do</SectionTitle>
@@ -1187,20 +1195,24 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
         {needReadMore && <ReadMore type="button" onClick={() => setReadMore(true)}>Read more</ReadMore>}
 
         {/* What's Included */}
-        <SectionTitle style={{ marginTop: "1.5rem" }}>What&apos;s included</SectionTitle>
-        <IncludedGrid>
-          {WHATS_INCLUDED.map((inc, i) => (
-            <IncludedCard key={i}>
-              <IncludedIcon>{inc.icon}</IncludedIcon>
-              <IncludedTitle>{inc.title}</IncludedTitle>
-              <IncludedList>
-                {inc.items.map((item, j) => (
-                  <li key={j}>{item}</li>
-                ))}
-              </IncludedList>
-            </IncludedCard>
-          ))}
-        </IncludedGrid>
+        {included.length > 0 && (
+          <>
+            <SectionTitle style={{ marginTop: "1.5rem" }}>What&apos;s included</SectionTitle>
+            <IncludedGrid>
+              {included.map((inc, i) => (
+                <IncludedCard key={i}>
+                  <IncludedIcon aria-hidden>{includedIcon(inc.title)}</IncludedIcon>
+                  <IncludedTitle>{inc.title}</IncludedTitle>
+                  <IncludedList>
+                    {inc.items.map((item, j) => (
+                      <li key={j}>{item}</li>
+                    ))}
+                  </IncludedList>
+                </IncludedCard>
+              ))}
+            </IncludedGrid>
+          </>
+        )}
 
         {/* Meet Your Host */}
         <HostSection>
@@ -1210,11 +1222,14 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
               {experience.hostImage ? <Image src={experience.hostImage} alt="" width={80} height={80} style={{ objectFit: "cover" }} /> : <div style={{ width: 80, height: 80 }} />}
             </HostAvatarBig>
             <HostDetails>
-              <HostSince>Host on Locals Only since 2019</HostSince>
-              <HostRating>★ {experience.rating.toFixed(1)} ({reviewCount} Reviews) · <Verified>Identity verified</Verified></HostRating>
-              <HostBio>
-                {experience.hostName} is passionate about mountain biking in the Carpathian Mountains and loves sharing hidden trails and local stories with guests.
-              </HostBio>
+              <HostName as="p">{experience.hostName}</HostName>
+              {experience.hostSince && <HostSince>Host on Locals Only since {experience.hostSince}</HostSince>}
+              {reviewCount > 0 && (
+                <HostRating>
+                  ★ {experience.rating.toFixed(1)} ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
+                </HostRating>
+              )}
+              {experience.hostBio && <HostBio>{experience.hostBio}</HostBio>}
               <ContactHostBtn type="button">Contact Host</ContactHostBtn>
               <SafetyNote>To protect your payment, never transfer money or communicate outside of the Locals Only website or app. <a href="#">Learn more…</a></SafetyNote>
               {isHost && <EditLink type="button" onClick={() => setIsEditing(true)}>Edit Experience</EditLink>}
@@ -1225,85 +1240,101 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
         {/* Where You'll Be */}
         <MapSection>
           <SectionTitle>Where you&apos;ll be</SectionTitle>
-          <MapPlaceholder />
-          <MapMetrics>
-            <Metric>4.7 km</Metric>
-            <Metric>12m</Metric>
-            <Metric>7m</Metric>
-            <Metric>22.8 km/h</Metric>
-          </MapMetrics>
+          <MapFrame>
+            <iframe
+              title={`Map of ${experience.location}`}
+              src={`https://www.google.com/maps?q=${mapQuery}&z=10&output=embed`}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </MapFrame>
+          {experience.whereDescription && <MapDesc>{experience.whereDescription}</MapDesc>}
           <MapDesc>
-            You&apos;ll bike along the famous TRANSFĂGĂRĂȘAN road with views of Lake Bâlea and the surrounding peaks. The route combines paved sections with optional off-road segments.
+            <a href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`} target="_blank" rel="noreferrer">
+              Open {experience.location} in Google Maps
+            </a>
           </MapDesc>
         </MapSection>
 
         {/* Things to Know */}
-        <SliderSection>
-          <SectionTitle>Things to know</SectionTitle>
-          <ThingsGrid>
-            <ThingsCol>
-              <IncludedTitle>Guest requirements</IncludedTitle>
-              <ThingsList>
-                {GUEST_REQUIREMENTS.map((x, i) => (
-                  <li key={i}>{x}</li>
-                ))}
-              </ThingsList>
-            </ThingsCol>
-            <ThingsCol>
-              <IncludedTitle>What to bring</IncludedTitle>
-              <ThingsList>
-                {WHAT_TO_BRING.map((x, i) => (
-                  <li key={i}>{x}</li>
-                ))}
-              </ThingsList>
-            </ThingsCol>
-            <ThingsCol>
-              <IncludedTitle>Cancellation policy</IncludedTitle>
-              <ThingsList>
-                <li>{CANCELLATION}</li>
-                {showMorePolicy && <li>If you cancel less than 7 days in advance or after the experience has started, no refund is available.</li>}
-              </ThingsList>
-              <ShowMorePolicy type="button" onClick={() => setShowMorePolicy((s) => !s)}>{showMorePolicy ? "Show less" : "Show more"}</ShowMorePolicy>
-            </ThingsCol>
-          </ThingsGrid>
-        </SliderSection>
+        {(guestRequirements.length > 0 || toBring.length > 0 || experience.cancellationPolicy) && (
+          <SliderSection>
+            <SectionTitle>Things to know</SectionTitle>
+            <ThingsGrid>
+              {guestRequirements.length > 0 && (
+                <ThingsCol>
+                  <IncludedTitle>Guest requirements</IncludedTitle>
+                  <ThingsList>
+                    {guestRequirements.map((x, i) => (
+                      <li key={i}>{x}</li>
+                    ))}
+                  </ThingsList>
+                </ThingsCol>
+              )}
+              {toBring.length > 0 && (
+                <ThingsCol>
+                  <IncludedTitle>What to bring</IncludedTitle>
+                  <ThingsList>
+                    {toBring.map((x, i) => (
+                      <li key={i}>{x}</li>
+                    ))}
+                  </ThingsList>
+                </ThingsCol>
+              )}
+              {experience.cancellationPolicy && (
+                <ThingsCol>
+                  <IncludedTitle>Cancellation policy</IncludedTitle>
+                  <ThingsList>
+                    <li>{experience.cancellationPolicy}</li>
+                  </ThingsList>
+                </ThingsCol>
+              )}
+            </ThingsGrid>
+          </SliderSection>
+        )}
 
         {/* Available Badges */}
+        {badges.length > 0 && (
         <SliderSection>
           <SliderHeader>
             <SliderTitle>Available badges for this activity</SliderTitle>
             <SliderNav>
               <SliderNavBtn $disabled={badgeOffset >= 0} onClick={() => slide(badgeRef, setBadgeOffset, 1, CARD)} aria-label="Previous"><ChevronLeft size={20} /></SliderNavBtn>
-              <SliderNavBtn $disabled={badgeOffset <= -(3 * CARD)} onClick={() => slide(badgeRef, setBadgeOffset, -1, CARD)} aria-label="Next"><ChevronRight size={20} /></SliderNavBtn>
+              <SliderNavBtn $disabled={badgeOffset <= -(badges.length * CARD)} onClick={() => slide(badgeRef, setBadgeOffset, -1, CARD)} aria-label="Next"><ChevronRight size={20} /></SliderNavBtn>
             </SliderNav>
           </SliderHeader>
           <SliderTrack ref={badgeRef}>
             <SliderList $offset={badgeOffset}>
-              {BADGES_FOR_ACTIVITY.map((b) => (
-                <ChallengeBadgeCard key={b.id} title={b.title} description={b.description} icon={b.icon} complete={b.complete} incompleteLabel={b.incompleteLabel} />
+              {badges.map((b) => (
+                <ChallengeBadgeCard key={b.id} title={b.title} description={b.description} icon={b.icon} complete={false} incompleteLabel="BADGE AVAILABLE" />
               ))}
             </SliderList>
           </SliderTrack>
         </SliderSection>
+        )}
 
         {/* Reviews */}
+        {reviews.length > 0 && (
         <SliderSection>
           <SliderHeader>
             <SliderTitle>Reviews</SliderTitle>
             <SliderNav>
               <SliderNavBtn $disabled={reviewOffset >= 0} onClick={() => slide(reviewRef, setReviewOffset, 1, REVIEW_CARD)} aria-label="Prev"><ChevronLeft size={20} /></SliderNavBtn>
-              <SliderNavBtn $disabled={reviewOffset <= -(MOCK_REVIEWS.length * REVIEW_CARD)} onClick={() => slide(reviewRef, setReviewOffset, -1, REVIEW_CARD)} aria-label="Next"><ChevronRight size={20} /></SliderNavBtn>
+              <SliderNavBtn $disabled={reviewOffset <= -(reviews.length * REVIEW_CARD)} onClick={() => slide(reviewRef, setReviewOffset, -1, REVIEW_CARD)} aria-label="Next"><ChevronRight size={20} /></SliderNavBtn>
             </SliderNav>
           </SliderHeader>
           <SliderTrack ref={reviewRef}>
             <SliderList $offset={reviewOffset}>
-              {MOCK_REVIEWS.map((r, i) => (
-                <ReviewCard key={i}>
+              {reviews.map((r) => (
+                <ReviewCard key={r.id}>
                   <ReviewHeader>
                     <ReviewAvatar />
                     <ReviewMeta>
-                      <ReviewName>{r.name}</ReviewName>
-                      <ReviewSince>{r.since}</ReviewSince>
+                      <ReviewName>{r.authorName}</ReviewName>
+                      <ReviewSince>
+                        {"★".repeat(r.rating)} ·{" "}
+                        {new Date(r.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                      </ReviewSince>
                     </ReviewMeta>
                   </ReviewHeader>
                   <ReviewText>{r.text}</ReviewText>
@@ -1312,6 +1343,7 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
             </SliderList>
           </SliderTrack>
         </SliderSection>
+        )}
 
         {/* Similar Experiences */}
         {similar.length > 0 && (
@@ -1319,16 +1351,16 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
             <SliderHeader>
               <SliderTitle>Similar experiences</SliderTitle>
               <SliderNav>
-                <SliderNavBtn $disabled={similarOffset >= 0} onClick={() => slide(similarRef, setSimilarOffset, 1, 280)} aria-label="Prev"><ChevronLeft size={20} /></SliderNavBtn>
-                <SliderNavBtn $disabled={similarOffset <= -(similar.length * 280)} onClick={() => slide(similarRef, setSimilarOffset, -1, 280)} aria-label="Next"><ChevronRight size={20} /></SliderNavBtn>
+                <SliderNavBtn $disabled={similarOffset >= 0} onClick={() => slide(similarRef, setSimilarOffset, 1, 280)} aria-label="Previous similar experiences"><ChevronLeft size={20} /></SliderNavBtn>
+                <SliderNavBtn $disabled={similarOffset <= -(similar.length * 280)} onClick={() => slide(similarRef, setSimilarOffset, -1, 280)} aria-label="Next similar experiences"><ChevronRight size={20} /></SliderNavBtn>
               </SliderNav>
             </SliderHeader>
             <SliderTrack ref={similarRef}>
               <SliderList $offset={similarOffset}>
                 {similar.map((e) => (
-                  <div key={e.id} style={{ flexShrink: 0, width: 280 }}>
+                  <SimilarSlot key={e.id}>
                     <ExperienceCard experience={e} />
-                  </div>
+                  </SimilarSlot>
                 ))}
               </SliderList>
             </SliderTrack>
@@ -1341,21 +1373,24 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
           <BookingCard>
             <PriceLead>From {formatPriceWithUnit(experience.price, "Lei")} <PriceUnit>/ person</PriceUnit></PriceLead>
             <BookingLabel>DATES</BookingLabel>
-            <BookingSelect><option>Select dates</option></BookingSelect>
+            <BookingSelect aria-label="Dates"><option>Select dates</option></BookingSelect>
             <BookingLabel>GUESTS</BookingLabel>
-            <BookingSelect><option>1 guest</option><option>2 guests</option><option>3+ guests</option></BookingSelect>
-            <SlotList>
-              {MOCK_SLOTS.map((s, i) => (
-                <SlotRow key={i}>
-                  <div>
-                    <SlotInfo>{s.label}</SlotInfo>
-                    <SlotPrice>{formatPriceWithUnit(s.price, "Lei")} / person</SlotPrice>
-                  </div>
-                  <ChooseBtn type="button">Choose</ChooseBtn>
-                </SlotRow>
-              ))}
-            </SlotList>
-            <ShowMoreDates type="button">Show more dates</ShowMoreDates>
+            <BookingSelect aria-label="Guests"><option>1 guest</option><option>2 guests</option><option>3+ guests</option></BookingSelect>
+            {availability.length > 0 ? (
+              <SlotList>
+                {availability.map((slot, i) => (
+                  <SlotRow key={i}>
+                    <div>
+                      <SlotInfo>{slot}</SlotInfo>
+                      <SlotPrice>{formatPriceWithUnit(experience.price, "Lei")} / person</SlotPrice>
+                    </div>
+                    <ChooseBtn type="button">Choose</ChooseBtn>
+                  </SlotRow>
+                ))}
+              </SlotList>
+            ) : (
+              <SlotInfo>The host hasn&apos;t published dates yet.</SlotInfo>
+            )}
           </BookingCard>
         </BookingCol>
       </PageWrapper>

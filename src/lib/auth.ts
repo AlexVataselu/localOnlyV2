@@ -1,5 +1,6 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
+import type { Adapter } from "next-auth/adapters";
 import type { JWT } from "next-auth/jwt";
 import Google from "next-auth/providers/google";
 import prisma from "@/lib/prisma";
@@ -14,8 +15,10 @@ function requireEnv(value: string | undefined, key: string) {
 const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prisma) as Adapter,
   secret: requireEnv(authSecret, "AUTH_SECRET or NEXTAUTH_SECRET"),
+  // Build OAuth callback URLs from the request host, so every Vercel deployment calls back to itself.
+  trustHost: true,
   session: {
     strategy: "jwt",
   },

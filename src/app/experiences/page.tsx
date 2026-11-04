@@ -46,15 +46,39 @@ const Loading = styled.div`
 const Error = styled.div`
   text-align: center;
   padding: 4rem 0;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   font-size: 1.2rem;
 `;
 
 const Empty = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
   text-align: center;
   padding: 4rem 0;
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 1.2rem;
+
+  p {
+    margin: 0;
+  }
+`;
+
+const ClearButton = styled.button`
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border: none;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.onAccent};
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.accentHover};
+  }
 `;
 
 const GridWrapper = styled.div`
@@ -81,14 +105,15 @@ export default function ExperiencesPage() {
   const [searchParams, setSearchParams] = useState<SearchParams>(DEFAULT_SEARCH_PARAMS);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // Sync URL -> searchParams when landing from e.g. home (HeaderSearchBar navigates with ?location= & ?experience=)
-  useEffect(() => {
-    const loc = urlSearch.get("location") ?? "";
-    const exp = urlSearch.get("experience") ?? "";
-    if (loc || exp) {
-      setSearchParams((prev) => ({ ...prev, location: loc, experience: exp }));
-    }
-  }, [urlSearch]);
+  // Sync URL -> searchParams when landing from e.g. home (HeaderSearchBar navigates with ?location= & ?experience=).
+  // Adjusted during render when the URL changes (React's pattern for deriving state from changing input).
+  const urlKey = `${urlSearch.get("location") ?? ""}|${urlSearch.get("experience") ?? ""}`;
+  const [syncedUrlKey, setSyncedUrlKey] = useState("|");
+  if (urlKey !== syncedUrlKey) {
+    setSyncedUrlKey(urlKey);
+    const [loc, exp] = urlKey.split("|");
+    if (loc || exp) setSearchParams((prev) => ({ ...prev, location: loc, experience: exp }));
+  }
 
   const {
     data,
@@ -133,14 +158,12 @@ export default function ExperiencesPage() {
     return data?.pages[0]?.averagePrice ?? 0;
   }, [data]);
 
+  // Slider bounds come from the API (all matching listings), not from the cards loaded so far:
+  // bounds taken from page 1 clamped the filter and silently hid pricier listings on later pages.
   const { minPrice, maxPrice } = useMemo(() => {
-    if (!experiences.length) return { minPrice: 0, maxPrice: 1000 };
-    const prices = experiences.map((e) => e.price);
-    return {
-      minPrice: Math.min(...prices),
-      maxPrice: Math.max(...prices),
-    };
-  }, [experiences]);
+    const apiMax = data?.pages[0]?.maxPrice;
+    return { minPrice: 0, maxPrice: apiMax && apiMax > 0 ? Math.ceil(apiMax) : 1000 };
+  }, [data]);
 
   const totalCount = useMemo(() => {
     return data?.pages[0]?.totalCount ?? experiences.length;
@@ -279,7 +302,18 @@ export default function ExperiencesPage() {
               )}
             </>
           ) : (
-            <Empty>No experiences found.</Empty>
+            <Empty>
+              <p>No experiences match your search and filters.</p>
+              <ClearButton
+                type="button"
+                onClick={() => {
+                  setFilters(DEFAULT_FILTERS);
+                  setSearchParams(DEFAULT_SEARCH_PARAMS);
+                }}
+              >
+                Clear search and filters
+              </ClearButton>
+            </Empty>
           )}
         </Content>
       </Container>

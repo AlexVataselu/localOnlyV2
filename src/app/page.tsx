@@ -21,13 +21,15 @@ const PageWrapper = styled.div`
 export default function Home() {
   return (
     <PageWrapper>
-      <AppHeader title="Locals Only" showBackLink={false} />
-      <HeroSection />
-      <FeatureCards />
-      <NewThisWeekSection />
-      <CTABanner />
-      <LocalGuidesSection />
-      <PartnersSection />
+      <AppHeader showBackLink={false} />
+      <main id="main">
+        <HeroSection />
+        <FeatureCards />
+        <NewThisWeekSection />
+        <CTABanner />
+        <LocalGuidesSection />
+        <PartnersSection />
+      </main>
       <AppFooter />
     </PageWrapper>
   );

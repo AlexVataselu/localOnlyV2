@@ -18,7 +18,7 @@ const ToggleButton = styled.button`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 
   &:focus-visible {

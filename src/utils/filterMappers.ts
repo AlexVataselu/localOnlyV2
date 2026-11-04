@@ -4,10 +4,11 @@ import {
   Duration,
   Special,
 } from "@/types/filters";
+import type { $Enums } from "@prisma/client";
 
 // Map display strings to Prisma enum values
-export const mapActivityTypeToEnum = (display: ActivityType): string => {
-  const mapping: Record<ActivityType, string> = {
+export const mapActivityTypeToEnum = (display: ActivityType): $Enums.ActivityType => {
+  const mapping: Record<ActivityType, $Enums.ActivityType> = {
     "Art and culture": "ART_AND_CULTURE",
     "Tours": "TOURS",
     "Entertainment": "ENTERTAINMENT",
@@ -20,8 +21,8 @@ export const mapActivityTypeToEnum = (display: ActivityType): string => {
   return mapping[display];
 };
 
-export const mapTimeOfDayToEnum = (display: TimeOfDay): string => {
-  const mapping: Record<TimeOfDay, string> = {
+export const mapTimeOfDayToEnum = (display: TimeOfDay): $Enums.TimeOfDay => {
+  const mapping: Record<TimeOfDay, $Enums.TimeOfDay> = {
     "Morning": "MORNING",
     "Afternoon": "AFTERNOON",
     "Evening": "EVENING",
@@ -29,8 +30,8 @@ export const mapTimeOfDayToEnum = (display: TimeOfDay): string => {
   return mapping[display];
 };
 
-export const mapDurationToEnum = (display: Duration): string => {
-  const mapping: Record<Duration, string> = {
+export const mapDurationToEnum = (display: Duration): $Enums.Duration => {
+  const mapping: Record<Duration, $Enums.Duration> = {
     "Up to 1h": "UP_TO_1H",
     "1 to 4h": "ONE_TO_4H",
     "4h to 1 day": "FOUR_H_TO_1_DAY",
@@ -40,8 +41,8 @@ export const mapDurationToEnum = (display: Duration): string => {
   return mapping[display];
 };
 
-export const mapSpecialToEnum = (display: Special): string => {
-  const mapping: Record<Special, string> = {
+export const mapSpecialToEnum = (display: Special): $Enums.Special => {
+  const mapping: Record<Special, $Enums.Special> = {
     "Deals & Discounts": "DEALS_AND_DISCOUNTS",
     "Free Cancellation": "FREE_CANCELLATION",
     "Skip the line": "SKIP_THE_LINE",

@@ -1,238 +1,330 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Roboto } from "next/font/google";
 import styled from "styled-components";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import ChallengeBadgesSlider from "./ChallengeBadgesSlider";
 import { HERO_SLIDES } from "./heroSlideData";
-import { SearchParams, DEFAULT_SEARCH_PARAMS } from "@/types/search";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["900"] });
 
+/**
+ * One screen, one guide. The guide's portrait fills the hero with its face in
+ * the upper right; the copy holds the left; that guide's badge cards dock in
+ * the bottom-right corner, over the portrait, as the next step after the
+ * action. The guide picker names each mascot and swaps portrait, line and
+ * badges together. The hero is always on a dark photo, so its colours are
+ * fixed light-on-dark in both themes.
+ */
+const DESKTOP = "@media (min-width: 1024px)";
+const GUTTER = "clamp(16px, 5vw, 80px)";
+const INK = "#0f1116";
+/** The sticky site header above the hero. */
+const HEADER = 90;
+
+/** Short name for each guide, for the picker. */
+const NAMES: Record<string, string> = {
+  "/bear.png": "Bear",
+  "/fox.png": "Fox",
+  "/lynx.png": "Lynx",
+  "/wolf.png": "Wolf",
+  "/dog.png": "Dog",
+};
+
+/** Keeps each mascot's face in frame; the portraits are square. */
+const FOCUS: Record<string, string> = {
+  "/bear.png": "45% 12%",
+  "/fox.png": "50% 12%",
+  "/lynx.png": "50% 10%",
+  "/wolf.png": "55% 12%",
+  "/dog.png": "50% 10%",
+};
+
 const Hero = styled.section`
   position: relative;
-  height: 100vh;
-  min-height: 100vh;
-  width: 100%;
   overflow: hidden;
+  color: #fff;
+  background: ${INK} url("/topo.jpg") center / cover no-repeat;
+  background-blend-mode: soft-light;
+
+  ${DESKTOP} {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    column-gap: 2rem;
+    min-height: max(960px, calc(100svh - ${HEADER}px));
+    padding: 0 0 2.5rem ${GUTTER};
+  }
 `;
 
 const Slide = styled.div<{ $active: boolean }>`
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto 0;
+  height: 58svh;
+  min-height: 360px;
   opacity: ${({ $active }) => ($active ? 1 : 0)};
-  pointer-events: ${({ $active }) => ($active ? "auto" : "none")};
-  transition: opacity 0.6s ease;
-`;
 
-const SlideBg = styled.div`
-  position: absolute;
-  inset: 0;
+  @media (prefers-reduced-motion: no-preference) {
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 
-  & img {
+  img {
     object-fit: cover;
+  }
+
+  /* Fade the photo into the topo ground instead of ending on a hard edge. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+
+  ${DESKTOP} {
+    inset: 0 0 0 30%;
+    height: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 `;
 
-const Overlay = styled.div`
+/** A neutral scrim: dark where text sits, clear over the face. */
+const Scrim = styled.div`
   position: absolute;
-  inset: 0;
-  background: transparent;
-  pointer-events: none;
+  inset: 0 0 auto 0;
+  height: 58svh;
+  min-height: 360px;
+  background: linear-gradient(to bottom, rgba(15, 17, 22, 0.35) 0%, rgba(15, 17, 22, 0) 30%, rgba(15, 17, 22, 0.7) 75%, rgba(15, 17, 22, 0) 100%);
+
+  ${DESKTOP} {
+    inset: 0;
+    height: auto;
+    background:
+      linear-gradient(90deg, ${INK} 30%, rgba(15, 17, 22, 0.75) 40%, rgba(15, 17, 22, 0) 58%),
+      linear-gradient(to bottom, rgba(15, 17, 22, 0) 45%, rgba(15, 17, 22, 0.55) 100%);
+  }
 `;
 
-const Content = styled.div`
+const Copy = styled.div`
   position: relative;
-  z-index: 2;
-  height: 100%;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  /* Below the face on a phone. */
+  padding: calc(58svh - 7rem) ${GUTTER} 0;
+
+  ${DESKTOP} {
+    padding: 3rem 0 0;
+  }
+`;
+
+/** The line, heading and actions, centred in the space above the guide row. */
+const Lead = styled.div`
+  display: flex;
+  flex-direction: column;
+
+  ${DESKTOP} {
+    flex: 1;
+    justify-content: center;
+  }
+`;
+
+/** The guide's line: the brand voice, not the page heading. */
+const Display = styled.p`
+  margin: 0;
+  font-weight: 900;
+  font-size: clamp(3rem, 5.2vw, 5.5rem);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+
+  span {
+    display: block;
+  }
+`;
+
+const Title = styled.h1`
+  margin: 1.5rem 0 0;
+  max-width: 26ch;
+  font-size: clamp(1.15rem, 1.7vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+  text-wrap: balance;
+`;
+
+const Actions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  margin-top: 2rem;
+`;
+
+const Primary = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 1.6rem;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${INK};
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-decoration: none;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: background 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.accentHover};
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const Secondary = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.accent};
+  }
+`;
+
+/** Pick a guide: each button shows the mascot and its name. */
+/** The cast: five equal tiles, portrait over name; the row's foot lines up with the badge cards' foot. */
+const Picker = styled.div`
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+
+  ${DESKTOP} {
+    max-width: 460px;
+    gap: 0.75rem;
+    margin: 2rem 0 1.25rem;
+  }
+`;
+
+const Guide = styled.button<{ $active: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 6rem clamp(24px, 5vw, 80px) 2rem;
-`;
-
-const TitleBlock = styled.span`
-  display: inline-block;
-  max-width: min(1400px, 100%);
-  margin: 0 0 1.5rem;
-  flex: none;
-  order: 0;
-  flex-grow: 0;
-`;
-
-const TitleMain = styled.span`
-  display: block;
-  white-space: nowrap;
-  font-family: "Roboto", sans-serif;
-  font-weight: 900;
-  font-size: clamp(48px, 12vw, 200px);
-  line-height: 150%;
-  text-align: center;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-  text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
-  margin: 0;
-`;
-
-const TitleSub = styled.span<{ $w?: number }>`
-  display: block;
-  width: ${({ $w }) => ($w != null && $w > 0 ? `${$w}px` : "100%")};
-  max-width: 100%;
-  font-family: "Roboto", sans-serif;
-  font-weight: 900;
-  font-size: clamp(48px, 12vw, 200px);
-  line-height: 150%;
-  text-align: center;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-  text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
-  margin: 0;
-`;
-
-const BadgesWrap = styled.div`
-  width: 100%;
-  margin-top: 1.5rem;
-`;
-
-const HERO_PADDING = "clamp(24px, 5vw, 80px)";
-
-const HeroNavSide = styled.div<{ $side: "left" | "right" }>`
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  ${({ $side }) => ($side === "left" ? `left: ${HERO_PADDING};` : `right: ${HERO_PADDING};`)}
-  z-index: 10;
-`;
-
-const HeroNavBtn = styled.button`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.25rem 0;
+  border: none;
+  background: none;
+  color: ${({ $active, theme }) => ($active ? theme.colors.accent : "rgba(255, 255, 255, 0.85)")};
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: ${({ $active }) => ($active ? 700 : 600)};
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, border-color 0.2s;
 
-  &:hover {
-    background: rgba(0, 0, 0, 0.5);
-    border-color: #fff;
+  span {
+    position: relative;
+    display: block;
+    width: min(100%, 64px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    /* The active guide gets the accent ring; the rest sit back a little. */
+    box-shadow: 0 0 0 2px ${INK}, 0 0 0 ${({ $active }) => ($active ? "4px" : "3px")} ${({ $active, theme }) => ($active ? theme.colors.accent : "rgba(255, 255, 255, 0.25)")};
+    opacity: ${({ $active }) => ($active ? 1 : 0.72)};
+
+    @media (prefers-reduced-motion: no-preference) {
+      transition: opacity 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+    }
+  }
+
+  img {
+    object-fit: cover;
+  }
+
+  &:hover span {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible span {
+    box-shadow: 0 0 0 2px ${INK}, 0 0 0 5px #fff;
   }
 `;
 
-const HeroNavCenter = styled.div`
-  position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  z-index: 10;
-`;
+/** The approved badge slider, docked in the portrait's lower corner. */
+const Dock = styled.div`
+  position: relative;
+  z-index: 1;
+  margin-top: 2.5rem;
+  padding: 0 ${GUTTER} 2.5rem;
 
-const Dot = styled.button<{ $active: boolean }>`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: none;
-  background: ${({ $active }) => ($active ? "#fff" : "rgba(255,255,255,0.5)")};
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.2s, transform 0.2s;
-
-  &:hover {
-    transform: scale(1.2);
+  ${DESKTOP} {
+    align-self: end;
+    margin-top: 0;
+    padding: 0 ${GUTTER} 0 0;
   }
 `;
 
 export default function HeroSection() {
   const [index, setIndex] = useState(0);
-  const [searchParams, setSearchParams] = useState<SearchParams>(DEFAULT_SEARCH_PARAMS);
-  const mainRef = useRef<HTMLSpanElement>(null);
-  const [subWidth, setSubWidth] = useState<number | undefined>(undefined);
-  const router = useRouter();
   const slide = HERO_SLIDES[index];
 
-  useEffect(() => {
-    const el = mainRef.current;
-    if (!el) return;
-    const onResize = () => setSubWidth(el.offsetWidth);
-    onResize();
-    const ro = new ResizeObserver(onResize);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [slide.titleMain]);
-
-  const go = (delta: number) => {
-    setIndex((i) => (i + delta + HERO_SLIDES.length) % HERO_SLIDES.length);
-  };
-
-  const onSearch = useCallback(
-    (params: SearchParams) => {
-      const q = new URLSearchParams();
-      if (params.location) q.set("location", params.location);
-      if (params.experience) q.set("experience", params.experience);
-      router.push(`/experiences?${q.toString()}`);
-    },
-    [router]
-  );
-
   return (
-    <Hero>
+    <Hero aria-labelledby="hero-title">
       {HERO_SLIDES.map((s, i) => (
-        <Slide key={s.image} $active={i === index}>
-          <SlideBg>
-            <Image src={s.image} alt="" fill priority={i === 0} sizes="100vw" />
-          </SlideBg>
-          <Overlay />
+        <Slide key={s.image} $active={i === index} aria-hidden="true">
+          <Image
+            src={s.image}
+            alt=""
+            fill
+            priority={i === 0}
+            sizes="(min-width: 1024px) 70vw, 100vw"
+            style={{ objectPosition: FOCUS[s.image] ?? "50% 12%" }}
+          />
         </Slide>
       ))}
+      <Scrim />
 
-      <Content className={roboto.className}>
-        <TitleBlock>
-          <TitleMain ref={mainRef}>{slide.titleMain}</TitleMain>
-          <TitleSub $w={subWidth}>{slide.titleSub}</TitleSub>
-        </TitleBlock>
-        <BadgesWrap>
-          <ChallengeBadgesSlider
-            key={index}
-            challenges={slide.challenges}
-            title={slide.badgeSectionTitle}
-          />
-        </BadgesWrap>
-      </Content>
+      <Copy>
+        <Lead>
+        <Display className={roboto.className} aria-live="polite">
+          <span>{slide.titleMain}</span>
+          <span>{slide.titleSub}</span>
+        </Display>
+        <Title id="hero-title">Outdoor and local experiences across Romania, hosted by the people who live there</Title>
+        <Actions>
+          <Primary href="/experiences">Browse experiences</Primary>
+          <Secondary href="/experiences/new">Host an experience</Secondary>
+        </Actions>
+        </Lead>
+        <Picker role="group" aria-label="Choose a guide">
+          {HERO_SLIDES.map((s, i) => (
+            <Guide key={s.image} type="button" $active={i === index} aria-pressed={i === index} onClick={() => setIndex(i)}>
+              <span>
+                <Image src={s.image} alt="" fill sizes="64px" />
+              </span>
+              {NAMES[s.image] ?? `Guide ${i + 1}`}
+            </Guide>
+          ))}
+        </Picker>
+      </Copy>
 
-      <HeroNavSide $side="left">
-        <HeroNavBtn type="button" onClick={() => go(-1)} aria-label="Previous slide">
-          <ChevronLeft size={24} />
-        </HeroNavBtn>
-      </HeroNavSide>
-      <HeroNavSide $side="right">
-        <HeroNavBtn type="button" onClick={() => go(1)} aria-label="Next slide">
-          <ChevronRight size={24} />
-        </HeroNavBtn>
-      </HeroNavSide>
-      <HeroNavCenter>
-        {HERO_SLIDES.map((_, i) => (
-          <Dot
-            key={i}
-            $active={i === index}
-            type="button"
-            onClick={() => setIndex(i)}
-            aria-label={`Go to slide ${i + 1}`}
-          />
-        ))}
-      </HeroNavCenter>
+      <Dock>
+        <ChallengeBadgesSlider key={index} challenges={slide.challenges} title={slide.badgeSectionTitle} dense />
+      </Dock>
     </Hero>
   );
 }

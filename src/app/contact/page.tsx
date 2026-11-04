@@ -4,7 +4,8 @@ import { useState, useCallback } from "react";
 import styled from "styled-components";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { Facebook, Instagram, Linkedin } from "lucide-react";
+
+const CONTACT_EMAIL = "info@localsonly.com";
 
 const PageWrapper = styled.div`
   min-height: 100vh;
@@ -116,7 +117,7 @@ const SubmitBtn = styled.button`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accentText};
   }
 `;
 
@@ -144,7 +145,7 @@ const CardText = styled.p`
 const CardLink = styled.a`
   display: block;
   font-size: 0.95rem;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accentText};
   text-decoration: none;
   margin-bottom: 0.75rem;
   transition: opacity 0.2s;
@@ -154,58 +155,38 @@ const CardLink = styled.a`
   }
 `;
 
-const SocialRow = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
-`;
-
-const SocialLink = styled.a`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  transition: color 0.2s;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.accent};
-  }
-`;
-
 export default function ContactPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
 
+  // There is no message backend yet: the form opens the visitor's email app with the
+  // message filled in, so nothing typed here is silently lost.
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      // Placeholder: wire to API or email service later
-      console.log({ name, email, message });
-      setName("");
-      setEmail("");
-      setMessage("");
+      const subject = encodeURIComponent(`Message from ${name}`);
+      const body = encodeURIComponent(`${message}\n\n${name} <${email}>`);
+      window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
     },
     [name, email, message]
   );
 
   return (
     <PageWrapper>
-      <AppHeader title="Contact" />
+      <AppHeader title="Contact" titleAs="p" />
       <Main>
         <Grid>
           <FormSection>
-            <FormTitle>Vrei sa vorbim?</FormTitle>
+            <FormTitle>Want to talk?</FormTitle>
             <Form onSubmit={handleSubmit}>
               <Label>
-                Nume
+                Name
                 <Input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Nume"
+                  placeholder="Your name"
                   required
                 />
               </Label>
@@ -215,40 +196,30 @@ export default function ContactPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
+                  placeholder="you@example.com"
                   required
                 />
               </Label>
               <Label>
-                Mesaj
+                Message
                 <TextArea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Mesaj"
+                  placeholder="Ask about a listing, hosting, or anything else"
                   required
                 />
               </Label>
-              <SubmitBtn type="submit">Trimite</SubmitBtn>
+              <SubmitBtn type="submit">Write email</SubmitBtn>
             </Form>
           </FormSection>
           <Card>
             <CardTitle>Contact Locals Only</CardTitle>
-            <CardLink href="tel:123145789">123.145.789</CardLink>
-            <CardLink href="mailto:info@localsonly.com">info@localsonly.com</CardLink>
-            <CardText>Locals Only | CA DRE# 00643485</CardText>
-            <CardText>© 2023 Locals Only & CO, LLC. All rights reserved.</CardText>
-            <CardText>Proiect organizat de asociatia Lala Land.</CardText>
-            <SocialRow>
-              <SocialLink href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <Facebook size={22} />
-              </SocialLink>
-              <SocialLink href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <Instagram size={22} />
-              </SocialLink>
-              <SocialLink href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                <Linkedin size={22} />
-              </SocialLink>
-            </SocialRow>
+            <CardLink href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</CardLink>
+            <CardText>
+              Hosts, guests and partners: write to us and a person from the team will reply.
+              Questions about a specific booking are best sent to its host.
+            </CardText>
+            <CardText>A project organised by the Lala Land association.</CardText>
           </Card>
         </Grid>
       </Main>

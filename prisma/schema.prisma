@@ -54,10 +54,34 @@ model Experience {
   timeOfDays    TimeOfDay[]
   duration      Duration?
   specials      Special[]
+  /// What the price covers, grouped: [{ "title": "Gear", "items": ["E-bike", "Helmet"] }]
+  included           Json     @default("[]")
+  toBring            String[] @default([])
+  guestRequirements  String[] @default([])
+  cancellationPolicy String?
+  languages          String[] @default([])
+  /// "Where you'll be": the route or meeting point, in the host's words.
+  whereDescription   String?
+  /// Upcoming time slots as shown to guests, e.g. "Sat, 14 Jun · 09:00–13:00".
+  availability       String[] @default([])
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   userId      String
   host        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews     Review[]
+}
+
+/// A guest's review of an experience. Experience.rating is kept as their average.
+model Review {
+  id           String     @id @default(cuid())
+  experienceId String
+  experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  authorName   String
+  rating       Int
+  text         String
+  createdAt    DateTime   @default(now())
+
+  @@index([experienceId])
 }
 
 enum Role {
@@ -72,6 +96,8 @@ model User {
   emailVerified DateTime?
   image         String?
   role          Role       @default(CLIENT)
+  /// Shown in "Meet your host".
+  bio           String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   experiences   Experience[]

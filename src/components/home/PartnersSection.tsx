@@ -75,8 +75,6 @@ const PARTNERS = [
   { id: "azuga-1", src: "/logoAzugaSki&Bike.png", alt: "Azuga Ski & Bike" },
   { id: "v8-1", src: "/v8-logo-mtb-azuga.png", alt: "V8 MTB Azuga" },
   { id: "awesome-1", src: "/awesome.png", alt: "Awesome" },
-  { id: "popasul-2", src: "/logo-popasul-uriasilor-albastru.png", alt: "Popasul Uriasilor" },
-  { id: "azuga-2", src: "/logoAzugaSki&Bike.png", alt: "Azuga Ski & Bike" },
   
 ];
 

@@ -32,13 +32,13 @@ const Card = styled.article`
   max-width: 313px;
   min-height: 320px;
   height: 390px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-left: clamp(6px, 1.5vw, 10px) solid #e2a506;
+  border: 1px solid ${({ theme }) => theme.colors.glassBorder};
+  border-left: clamp(6px, 1.5vw, 10px) solid ${({ theme }) => theme.colors.accent};
   border-radius: clamp(12px, 2.5vw, 20px);
   flex: none;
   flex-grow: 0;
   /* liquid glass - match ChallengeBadgeCard */
-  background: rgba(255, 255, 255, 0.08);
+  background: ${({ theme }) => theme.colors.glass};
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -60,7 +60,7 @@ const TitleMain = styled.span`
   display: block;
   font-family: "Mulish", sans-serif;
   font-weight: 900;
-  color: #ffffff;
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: clamp(28px, 5vw, 48px);
   line-height: clamp(34px, 6.25vw, 60px);
   margin: 0;
@@ -72,7 +72,7 @@ const TitleSub = styled.span<{ $w?: number }>`
   max-width: 100%;
   font-family: "Mulish", sans-serif;
   font-weight: 900;
-  color: #ffffff;
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: clamp(16px, 2.8vw, 32px);
   line-height: clamp(20px, 3.5vw, 40px);
   margin: 0;
@@ -85,7 +85,7 @@ const CardText = styled.p`
   font-weight: 900;
   font-size: clamp(14px, 2vw, 24px);
   line-height: clamp(18px, 2.5vw, 30px);
-  color: #ffffff;
+  color: ${({ theme }) => theme.colors.textPrimary};
   flex: 1;
   min-height: 0;
   overflow: hidden;
