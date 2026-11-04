@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:push": "prisma db push",
@@ -19,12 +19,12 @@
     "@tanstack/react-virtual": "^3.13.12",
     "axios": "^1.13.2",
     "lucide-react": "^0.562.0",
-    "next": "16.0.1",
+    "next": "16.0.11",
     "next-auth": "5.0.0-beta.30",
     "prisma": "^6.19.0",
-    "react": "19.2.0",
+    "react": "19.2.9",
     "react-day-picker": "^9.13.0",
-    "react-dom": "19.2.0",
+    "react-dom": "19.2.9",
     "react-range": "^1.10.0",
     "styled-components": "^6.1.19"
   },
@@ -36,7 +36,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.9.16",
     "eslint": "^9",
-    "eslint-config-next": "16.0.1",
+    "eslint-config-next": "16.0.11",
     "tsx": "^4.0.0",
     "typescript": "^5"
   },
