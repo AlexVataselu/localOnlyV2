@@ -69,6 +69,8 @@ export async function apiRaw(path: string, { method = "GET", caller = anonymous,
       Accept: "application/json",
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Lets server-to-server calls through Vercel Deployment Protection on API previews.
+      ...(process.env.API_PROTECTION_BYPASS ? { "x-vercel-protection-bypass": process.env.API_PROTECTION_BYPASS } : {}),
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
     cache: "no-store",

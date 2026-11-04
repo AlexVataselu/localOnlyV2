@@ -14,10 +14,10 @@
     "@tanstack/react-virtual": "^3.13.12",
     "jose": "5.10.0",
     "lucide-react": "^0.562.0",
-    "next": "16.0.1",
+    "next": "16.0.11",
     "next-auth": "5.0.0-beta.30",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
     "server-only": "0.0.1",
     "styled-components": "^6.1.19"
   },
@@ -29,7 +29,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.9.15",
     "eslint": "^9",
-    "eslint-config-next": "16.0.1",
+    "eslint-config-next": "16.0.11",
     "typescript": "^5"
   }
 }
