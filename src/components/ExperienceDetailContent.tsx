@@ -4,7 +4,10 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import styled from "styled-components";
 import ExperienceExtrasFields from "@/components/ExperienceExtrasFields";
-import { Share2, Heart, ChevronLeft, ChevronRight, X, MoreVertical, Plus, Trash2 } from "lucide-react";
+import {
+  Share2, Heart, ChevronLeft, ChevronRight, ChevronDown, X, Grip, Plus, Trash2, Star, Radar, CircleCheck,
+  CupSoda, Utensils, Bus, Backpack, Tent, Check, type LucideIcon,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,9 +31,10 @@ import ExperienceCard from "@/components/ExperienceCard";
 /** Full-width hero: title, stars, location, share, save, photo gallery */
 const HeroSection = styled.section`
   width: 100%;
-  padding: 2rem clamp(24px, 5vw, 80px) 2rem;
+  padding: 2rem clamp(24px, 5vw, 80px) 40px;
 `;
 
+/** Edit mode keeps the two-column form + price card. */
 const PageWrapper = styled.div`
   width: 100%;
   padding: 1.5rem clamp(24px, 5vw, 80px) 4rem;
@@ -40,7 +44,26 @@ const PageWrapper = styled.div`
 
   @media (max-width: 1100px) {
     flex-direction: column;
-    /* flex-start here let the column size to its widest content (1760px on phones). */
+    align-items: stretch;
+  }
+`;
+
+const ContentWrap = styled.div`
+  width: 100%;
+  padding: 0 clamp(24px, 5vw, 80px) 4rem;
+`;
+
+/** About the experience on the left, booking card on the right, aligned to the bottom as in the design. */
+const TopRow = styled.div`
+  display: flex;
+  gap: 40px;
+  align-items: flex-end;
+  padding: 40px 0;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+
+  @media (max-width: 1100px) {
+    flex-direction: column;
     align-items: stretch;
   }
 `;
@@ -52,17 +75,23 @@ const MainCol = styled.div`
 `;
 
 const BookingCol = styled.aside`
-  width: 380px;
+  width: 300px;
   flex-shrink: 0;
-  position: sticky;
-  top: 100px;
 
   @media (max-width: 1100px) {
     width: 100%;
-    position: static;
+    max-width: 420px;
     /* On phones, show price and booking right after the photos, not five screens down. */
     order: -1;
   }
+`;
+
+const IncludedBlock = styled.div`
+  margin-top: 40px;
+`;
+
+const SimilarSection = styled.section`
+  padding-top: 40px;
 `;
 
 // ---------- Hero & Gallery ----------
@@ -103,13 +132,15 @@ const HeroRatingBadge = styled.span`
 `;
 
 const HeroStar = styled.span`
-  color: #ffd700;
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 1.1rem;
 `;
 
 const HeroLocationText = styled.span`
   font-size: 1rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  font-weight: 700;
+  margin-left: 2.5rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const HeroActionsRow = styled.div`
@@ -142,12 +173,10 @@ const HeroWrap = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  gap: 6px;
-  aspect-ratio: 2.5/1;
+  gap: 10px;
+  aspect-ratio: 1360/409;
   min-height: 240px;
-  border-radius: 16px;
   overflow: hidden;
-  margin-bottom: 1.5rem;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -175,19 +204,19 @@ const ShowAllPhotos = styled.button`
   position: absolute;
   bottom: 12px;
   right: 12px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none;
-  background: rgba(0,0,0,0.7);
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #222;
+  background: #fff;
+  color: #222;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
 
-  &:hover { background: rgba(0,0,0,0.85); }
+  &:hover { background: #f2f2f2; }
 `;
 
 // ---------- Photo Gallery Modal ----------
@@ -268,232 +297,338 @@ const PhotoModalCounter = styled.div`
   font-size: 0.95rem;
 `;
 
-// ---------- Host & What we'll do ----------
-const HostRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-`;
-const HostAvatar = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.surface};
-  flex-shrink: 0;
-`;
-const HostLabel = styled.span`
-  font-size: 1rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-const HostName = styled.span`
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-const MetaLine = styled.p`
-  margin: 0 0 1rem 0;
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
+// ---------- Section shell (design: 40px vertical rhythm, a rule under each section) ----------
+const Section = styled.section`
+  padding: 40px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 const SectionTitle = styled.h2`
-  font-size: 1.35rem;
-  font-weight: 700;
-  margin: 0 0 0.75rem 0;
+  font-size: 1.375rem;
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 0 0 10px 0;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
-const Description = styled.p`
+const SectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 20px;
+
+  ${SectionTitle} { margin: 0; }
+`;
+/** Large body copy used by "What we will do", the host bio and the map description. */
+const BodyText = styled.p`
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.65;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 1.25rem;
+  line-height: 1.3;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  overflow-wrap: anywhere;
+
+  @media (max-width: 720px) { font-size: 1.0625rem; }
+`;
+
+// ---------- Hosted by + What we will do ----------
+const HostIntro = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.5rem;
+  margin-bottom: 40px;
+`;
+const HostIntroTitle = styled.p`
+  margin: 0 0 10px 0;
+  font-size: 1.375rem;
+  font-weight: 900;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+const HostIntroMeta = styled.p`
+  margin: 0;
+  font-size: 1.25rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+const Avatar = styled.div<{ $size: number }>`
+  width: ${({ $size }) => $size}px;
+  height: ${({ $size }) => $size}px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-weight: 900;
+  font-size: ${({ $size }) => Math.round($size / 2.6)}px;
+
+  img { width: 100%; height: 100%; object-fit: cover; }
 `;
 const ReadMore = styled.button`
-  margin-top: 0.5rem;
   padding: 0;
   border: none;
   background: none;
-  color: ${({ theme }) => theme.colors.accentText};
-  font-size: 0.95rem;
-  font-weight: 600;
+  color: inherit;
+  font: inherit;
+  font-weight: 900;
   cursor: pointer;
-  text-decoration: underline;
 
-  &:hover { opacity: 0.9; }
+  &:hover { text-decoration: underline; }
 `;
 
-// ---------- What's Included ----------
-const IncludedGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+// ---------- Slider nav: the design's pill (prev blank half, next accent half) ----------
+const PillNav = styled.div<{ $variant: "round" | "square" }>`
+  display: inline-flex;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: ${({ $variant }) => ($variant === "round" ? 3 : 1)}px solid ${({ theme }) => theme.colors.accent};
+  border-radius: ${({ $variant }) => ($variant === "round" ? 20 : 10)}px;
+`;
+const PillNavBtn = styled.button<{ $next?: boolean }>`
+  width: 48px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: ${({ $next, theme }) => ($next ? theme.colors.accent : theme.colors.cardBackground)};
+  color: ${({ $next, theme }) => ($next ? theme.colors.onAccent : theme.colors.textPrimary)};
+
+  &:disabled { cursor: not-allowed; }
+  &:disabled svg { opacity: 0.35; }
+`;
+
+// ---------- What's included ----------
+const IncludedTrack = styled.div`
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  /* Room for the card shadow, which overflow would clip. */
+  padding: 0 6px 6px 0;
+
+  &::-webkit-scrollbar { display: none; }
 `;
 const IncludedCard = styled.div`
-  padding: 1.25rem;
-  border-radius: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
-  transition: border-color 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.accent};
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  }
+  flex: 0 0 150px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.colors.panel};
+  color: ${({ theme }) => theme.colors.onPanel};
+  filter: drop-shadow(4px 4px 2px rgba(0, 0, 0, 0.25));
 `;
-const IncludedIcon = styled.div`
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
+const IncludedHead = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 `;
-const IncludedTitle = styled.div`
-  font-weight: 600;
-  font-size: 0.95rem;
-  margin-bottom: 0.5rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
+const IncludedTitle = styled.h3`
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 500;
 `;
 const IncludedList = styled.ul`
+  list-style: none;
   margin: 0;
-  padding-left: 1.2rem;
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  line-height: 1.5;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.875rem;
 `;
 
-// ---------- Booking column ----------
+// ---------- Booking card ----------
 const BookingCard = styled.div`
-  padding: 1.5rem;
-  border-radius: 16px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 25px 20px;
+  border-radius: 20px;
+  border: 1px solid ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.colors.panel};
+  color: ${({ theme }) => theme.colors.onPanel};
+  filter: drop-shadow(4px 4px 2px rgba(0, 0, 0, 0.25));
 `;
-const PriceLead = styled.div`
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  margin-bottom: 1.25rem;
+const PriceLead = styled.p`
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 900;
 `;
 const PriceUnit = styled.span`
   font-size: 1rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  font-weight: 400;
+`;
+const BookingFields = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+`;
+const BookingField = styled.label<{ $side: "left" | "right" }>`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px 32px 8px 16px;
+  border: 1px solid ${({ theme }) => theme.colors.panelLine};
+  border-radius: ${({ $side }) => ($side === "left" ? "10px 0 0 10px" : "0 10px 10px 0")};
+  ${({ $side }) => ($side === "right" ? "border-left: none;" : "")}
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus-within { outline: 2px solid ${({ theme }) => theme.colors.accent}; outline-offset: -2px; }
 `;
 const BookingSelect = styled.select`
+  appearance: none;
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.cardBackground};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 0.95rem;
-  margin-bottom: 0.75rem;
+  min-width: 0;
+  border: none;
+  padding: 0;
+  text-overflow: ellipsis;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.panelMuted};
+  font-size: 0.75rem;
+  font-weight: 300;
   cursor: pointer;
+  outline: none;
+
+  option { color: #1f1f1f; }
 `;
-const BookingLabel = styled.label`
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin-bottom: 0.35rem;
-`;
-const SlotList = styled.div`
-  margin-top: 1rem;
+const BookingChevron = styled(ChevronDown)`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
 `;
 const SlotRow = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 1rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-
-  &:last-of-type { border-bottom: none; }
+  padding-bottom: 20px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.panelLine};
 `;
-const SlotInfo = styled.div`
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
+const SlotDate = styled.p`
+  margin: 0 0 10px 0;
+  font-size: 0.875rem;
 `;
-const SlotPrice = styled.span`
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
+const SlotTime = styled.p`
+  margin: 0;
+  font-size: 0.75rem;
 `;
-const ChooseBtn = styled.button`
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.accent};
-  background: transparent;
-  color: ${({ theme }) => theme.colors.accentText};
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.onAccent};
-  }
-`;
-
-// ---------- Meet Your Host ----------
-const HostSection = styled.section`
-  margin-top: 2.5rem;
-  padding-top: 2rem;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-`;
-const HostSectionInner = styled.div`
+const SlotSide = styled.div`
   display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-`;
-const HostAvatarBig = styled.div`
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.surface};
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   flex-shrink: 0;
 `;
-const HostDetails = styled.div`
-  flex: 1;
-  min-width: 200px;
+const SlotPrice = styled.p`
+  margin: 0;
+  font-size: 0.875rem;
+  white-space: nowrap;
+
+  span { font-size: 0.75rem; color: ${({ theme }) => theme.colors.panelMuted}; }
 `;
-const HostSince = styled.p`
-  margin: 0 0 0.25rem 0;
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-const HostRating = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.95rem;
-  margin-bottom: 0.5rem;
-`;
-const HostBio = styled.p`
-  margin: 0 0 1rem 0;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-const ContactHostBtn = styled.button`
-  padding: 12px 24px;
+const ChooseBtn = styled.button`
+  padding: 8px 20px;
   border-radius: 10px;
   border: none;
   background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.onAccent};
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 900;
+  cursor: pointer;
+
+  &:hover { background: ${({ theme }) => theme.colors.accentHover}; }
+`;
+const MoreDatesBtn = styled.button`
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.panelLine};
+  background: ${({ theme }) => theme.colors.onPanel};
+  color: ${({ theme }) => theme.colors.panel};
+  font-size: 0.875rem;
+  font-weight: 900;
+  cursor: pointer;
+`;
+const NoDates = styled.p`
+  margin: 0;
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.panelMuted};
+`;
+
+// ---------- Meet the host ----------
+const HostCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 40px;
+`;
+const HostCardText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  p { margin: 0; }
+`;
+const HostCardName = styled.h2`
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+const IconLine = styled.p`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+`;
+const HostActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  flex-wrap: wrap;
+  margin-top: 40px;
+`;
+const ContactHostBtn = styled.button`
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.onAccent};
+  font-size: 1.25rem;
+  font-weight: 900;
   cursor: pointer;
 
   &:hover { background: ${({ theme }) => theme.colors.accentHover}; }
 `;
 const SafetyNote = styled.p`
-  margin: 1rem 0 0 0;
-  font-size: 0.8rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  max-width: 440px;
+  font-size: 0.875rem;
+  line-height: 1.1;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  svg { flex-shrink: 0; }
+  a { font-weight: 900; color: inherit; text-decoration: none; }
+  a:hover { text-decoration: underline; }
 `;
 const EditLink = styled.button`
-  margin-top: 0.75rem;
   padding: 0;
   border: none;
   background: none;
@@ -503,20 +638,13 @@ const EditLink = styled.button`
   text-decoration: underline;
 `;
 
-// ---------- Where You'll Be ----------
-const MapSection = styled.section`
-  margin-top: 2.5rem;
-  padding-top: 2rem;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-`;
+// ---------- Where you'll be ----------
 const MapFrame = styled.div`
   position: relative;
   width: 100%;
-  aspect-ratio: 2 / 1;
-  border-radius: 16px;
+  aspect-ratio: 16 / 9;
+  margin: 20px 0;
   overflow: hidden;
-  margin-bottom: 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
 
   iframe {
@@ -527,70 +655,57 @@ const MapFrame = styled.div`
     border: 0;
   }
 
-  @media (max-width: 720px) {
-    aspect-ratio: 4 / 3;
-  }
+  @media (max-width: 720px) { aspect-ratio: 4 / 3; }
 `;
-const MapDesc = styled.p`
+const MapLink = styled.p`
   margin: 1rem 0 0 0;
   font-size: 0.95rem;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  a { color: ${({ theme }) => theme.colors.accentText}; }
 `;
 
-// ---------- Things to Know ----------
+// ---------- Things to know ----------
 const ThingsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 2rem;
-  margin-top: 1rem;
+  grid-template-columns: minmax(0, 371px) auto minmax(0, 1fr);
+  gap: 40px;
+  margin-top: 20px;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; gap: 28px; }
 `;
-const ThingsCol = styled.div``;
+const ThingsCol = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+const ThingsTitle = styled.h3`
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
 const ThingsList = styled.ul`
-  margin: 0.5rem 0 0 0;
-  padding-left: 1.2rem;
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  line-height: 1.7;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  li { display: flex; align-items: flex-start; gap: 5px; }
+  svg { flex-shrink: 0; margin-top: 2px; }
+`;
+const PolicyText = styled.p`
+  margin: 0;
+  max-width: 366px;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 // ---------- Sliders (Badges, Reviews, Similar) ----------
-const SliderSection = styled.section`
-  margin-top: 2.5rem;
-  padding-top: 2rem;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-`;
-const SliderHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-`;
-const SliderTitle = styled.h2`
-  font-size: 1.35rem;
-  font-weight: 700;
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-const SliderNav = styled.div`
-  display: flex;
-  gap: 4px;
-`;
-const SliderNavBtn = styled.button<{ $disabled?: boolean }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
-  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover:not(:disabled) { border-color: ${({ theme }) => theme.colors.accent}; }
-`;
 const SliderTrack = styled.div`
   overflow: hidden;
 `;
@@ -603,50 +718,82 @@ const SimilarSlot = styled.div`
     flex: 1;
   }
 `;
-
-const SliderList = styled.div<{ $offset: number }>`
+const SliderList = styled.div<{ $offset: number; $gap?: number }>`
   display: flex;
-  gap: 1rem;
+  gap: ${({ $gap }) => $gap ?? 16}px;
   transform: translateX(${({ $offset }) => $offset}px);
   transition: transform 0.3s ease;
 `;
+/** "Similar experiences": big title under an accent rule that curls at the right end. */
+const AccentTitle = styled.h2`
+  margin: 0;
+  padding: 20px 20px 0 0;
+  border-top: 5px solid ${({ theme }) => theme.colors.accent};
+  border-top-right-radius: 20px;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 900;
+  line-height: 1;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
 
-// ---------- Review card ----------
-const ReviewCard = styled.div`
+// ---------- Reviews ----------
+const ReviewsTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+
+  h2 { font-size: 1.5rem; margin: 0; }
+`;
+const TextNav = styled.div`
+  display: flex;
+  gap: 12px;
+  padding-right: 20px;
+`;
+const TextNavBtn = styled.button<{ $next?: boolean }>`
+  padding: 4px 0;
+  border: none;
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: ${({ $next, theme }) => ($next ? theme.colors.accentText : theme.colors.textSecondary)};
+
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+`;
+const ReviewCard = styled.article`
   flex-shrink: 0;
-  width: 320px;
-  padding: 1.25rem;
-  border-radius: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
+  width: 330px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid ${({ theme }) => theme.colors.panelLine};
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 420px) { width: 280px; }
 `;
 const ReviewHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: 20px;
 `;
-const ReviewAvatar = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.border};
+const ReviewMeta = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.875rem;
 `;
-const ReviewMeta = styled.div``;
-const ReviewName = styled.div`
-  font-weight: 600;
-  font-size: 0.95rem;
-`;
-const ReviewSince = styled.div`
-  font-size: 0.8rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
+const ReviewName = styled.h3`
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 900;
 `;
 const ReviewText = styled.p`
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.875rem;
+  line-height: 1.3;
 `;
 
 // ---------- Edit (existing) ----------
@@ -752,14 +899,17 @@ const CancelButton = styled.button`
 // ---------- Per-listing details ----------
 // Everything below the description comes from the experience record; a section with no data is hidden.
 
-const INCLUDED_ICONS: Array<[RegExp, string]> = [
-  [/drink|water|coffee|tea|wine/i, "☕"],
-  [/food|meal|lunch|snack|tasting/i, "🍽️"],
-  [/transport|transfer|shuttle|pick/i, "🚐"],
-  [/gear|equipment|bike|kayak|helmet/i, "⛑️"],
-  [/rest|cabin|stay|accommodation|lodg/i, "⛺"],
+const INCLUDED_ICONS: Array<[RegExp, LucideIcon]> = [
+  [/drink|water|coffee|tea|wine/i, CupSoda],
+  [/food|meal|lunch|snack|tasting/i, Utensils],
+  [/transport|transfer|shuttle|pick/i, Bus],
+  [/gear|equipment|bike|kayak|helmet/i, Backpack],
+  [/rest|cabin|stay|accommodation|lodg/i, Tent],
 ];
-const includedIcon = (title: string) => INCLUDED_ICONS.find(([re]) => re.test(title))?.[1] ?? "✔️";
+const includedIcon = (title: string): LucideIcon => INCLUDED_ICONS.find(([re]) => re.test(title))?.[1] ?? Check;
+const initialOf = (name?: string | null) => (name?.trim()[0] ?? "?").toUpperCase();
+/** Booking slots shown before "Show more dates". */
+const SLOTS_SHOWN = 3;
 
 /** Badges a guest can work towards, by activity type. None are "completed": there is no progress tracking yet. */
 const BADGES_BY_ACTIVITY: Record<string, Array<{ id: string; title: string; description: string; icon: string }>> = {
@@ -876,6 +1026,8 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
   const [reviewOffset, setReviewOffset] = useState(0);
   const [similarOffset, setSimilarOffset] = useState(0);
   const [similar, setSimilar] = useState<Experience[]>([]);
+  const [showAllDates, setShowAllDates] = useState(false);
+  const includedRef = useRef<HTMLDivElement>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
   const similarRef = useRef<HTMLDivElement>(null);
@@ -891,6 +1043,9 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
   const badges = Array.from(
     new Map((experience.activityTypes ?? []).flatMap((t) => BADGES_BY_ACTIVITY[t] ?? []).map((b) => [b.id, b])).values(),
   );
+  const visibleSlots = showAllDates ? availability : availability.slice(0, SLOTS_SHOWN);
+  const metaLine = [experience.duration, languages.length ? `Hosted in ${languages.join(" and ")}` : null].filter(Boolean).join(" - ");
+  const scrollIncluded = (dir: 1 | -1) => includedRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
   const mapQuery = encodeURIComponent(`${experience.location}, Romania`);
   const descShort = 280;
   const needReadMore = (experience.description?.length ?? 0) > descShort;
@@ -1029,7 +1184,7 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
   }, [photoModalOpen]);
 
   const CARD = 280;
-  const REVIEW_CARD = 320 + 16;
+  const REVIEW_CARD = 330 + 20;
 
   if (isEditing && isHost) {
     return (
@@ -1137,9 +1292,9 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
             <HeroMetaLeft>
               <HeroRatingBadge>
                 <HeroStar>★</HeroStar>
-                {reviewCount > 0 ? `${experience.rating.toFixed(1)} (${reviewCount} ${reviewCount === 1 ? "review" : "reviews"})` : "New"}
+                {reviewCount > 0 ? `${experience.rating.toFixed(2)} (${reviewCount} ${reviewCount === 1 ? "Review" : "Reviews"})` : "New"}
               </HeroRatingBadge>
-              <HeroLocationText> · {experience.location}</HeroLocationText>
+              <HeroLocationText>{experience.location}</HeroLocationText>
             </HeroMetaLeft>
             <HeroActionsRow>
               <HeaderActionBtn type="button" onClick={handleShare} aria-label="Share">
@@ -1168,77 +1323,166 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
           <HeroGalleryCell $col={4} $spanRows>
             <Image src={imgFive[4]} alt="" fill sizes="(max-width:768px) 100vw, 25vw" style={{ objectFit: "cover" }} />
             <ShowAllPhotos type="button" onClick={() => { setPhotoModalOpen(true); setPhotoIndex(0); }}>
-              <MoreVertical size={16} />
+              <Grip size={16} aria-hidden />
               Show all {galleryImages.length} photo{galleryImages.length === 1 ? "" : "s"}
             </ShowAllPhotos>
           </HeroGalleryCell>
         </HeroWrap>
       </HeroSection>
 
-      <PageWrapper>
-        <MainCol>
-          {/* Experience hosted by & What we'll do */}
-        {experience.hostName && (
-          <HostRow>
-            <HostAvatar>
-              {experience.hostImage ? <Image src={experience.hostImage} alt="" width={40} height={40} style={{ objectFit: "cover" }} /> : <div style={{ width: 40, height: 40 }} />}
-            </HostAvatar>
-            <HostLabel>Experience hosted by <HostName>{experience.hostName}</HostName></HostLabel>
-          </HostRow>
-        )}
-        <MetaLine>
-          {[experience.duration, languages.length ? `Hosted in ${languages.join(" and ")}` : null].filter(Boolean).join(" · ")}
-        </MetaLine>
-
-        <SectionTitle>What we&apos;ll do</SectionTitle>
-        <Description>{descToShow}</Description>
-        {needReadMore && <ReadMore type="button" onClick={() => setReadMore(true)}>Read more</ReadMore>}
-
-        {/* What's Included */}
-        {included.length > 0 && (
-          <>
-            <SectionTitle style={{ marginTop: "1.5rem" }}>What&apos;s included</SectionTitle>
-            <IncludedGrid>
-              {included.map((inc, i) => (
-                <IncludedCard key={i}>
-                  <IncludedIcon aria-hidden>{includedIcon(inc.title)}</IncludedIcon>
-                  <IncludedTitle>{inc.title}</IncludedTitle>
-                  <IncludedList>
-                    {inc.items.map((item, j) => (
-                      <li key={j}>{item}</li>
-                    ))}
-                  </IncludedList>
-                </IncludedCard>
-              ))}
-            </IncludedGrid>
-          </>
-        )}
-
-        {/* Meet Your Host */}
-        <HostSection>
-          <SectionTitle>Meet your host</SectionTitle>
-          <HostSectionInner>
-            <HostAvatarBig>
-              {experience.hostImage ? <Image src={experience.hostImage} alt="" width={80} height={80} style={{ objectFit: "cover" }} /> : <div style={{ width: 80, height: 80 }} />}
-            </HostAvatarBig>
-            <HostDetails>
-              <HostName as="p">{experience.hostName}</HostName>
-              {experience.hostSince && <HostSince>Host on Locals Only since {experience.hostSince}</HostSince>}
-              {reviewCount > 0 && (
-                <HostRating>
-                  ★ {experience.rating.toFixed(1)} ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
-                </HostRating>
+      <ContentWrap>
+        {/* About the experience + booking card, side by side (the card sits level with the bottom of the column). */}
+        <TopRow>
+          <MainCol>
+            <HostIntro>
+              <div>
+                <HostIntroTitle>
+                  {experience.hostName ? `Experience hosted by ${experience.hostName}` : "About this experience"}
+                </HostIntroTitle>
+                {metaLine && <HostIntroMeta>{metaLine}</HostIntroMeta>}
+              </div>
+              {experience.hostName && (
+                <Avatar $size={60}>
+                  {experience.hostImage ? <Image src={experience.hostImage} alt="" width={60} height={60} /> : initialOf(experience.hostName)}
+                </Avatar>
               )}
-              {experience.hostBio && <HostBio>{experience.hostBio}</HostBio>}
-              <ContactHostBtn type="button">Contact Host</ContactHostBtn>
-              <SafetyNote>To protect your payment, never transfer money or communicate outside of the Locals Only website or app. <a href="#">Learn more…</a></SafetyNote>
-              {isHost && <EditLink type="button" onClick={() => setIsEditing(true)}>Edit Experience</EditLink>}
-            </HostDetails>
-          </HostSectionInner>
-        </HostSection>
+            </HostIntro>
 
-        {/* Where You'll Be */}
-        <MapSection>
+            <SectionTitle>What we will do</SectionTitle>
+            <BodyText>
+              {descToShow}
+              {needReadMore && !readMore && (
+                <>
+                  {" "}
+                  <ReadMore type="button" onClick={() => setReadMore(true)}>Read More</ReadMore>
+                </>
+              )}
+            </BodyText>
+
+            {included.length > 0 && (
+              <IncludedBlock>
+                <SectionHeader>
+                  <SectionTitle>What&apos;s included</SectionTitle>
+                  {included.length > 1 && (
+                    <PillNav $variant="round">
+                      <PillNavBtn type="button" onClick={() => scrollIncluded(-1)} aria-label="Previous included items"><ChevronLeft size={20} /></PillNavBtn>
+                      <PillNavBtn type="button" $next onClick={() => scrollIncluded(1)} aria-label="Next included items"><ChevronRight size={20} /></PillNavBtn>
+                    </PillNav>
+                  )}
+                </SectionHeader>
+                <IncludedTrack ref={includedRef}>
+                  {included.map((inc, i) => {
+                    const Icon = includedIcon(inc.title);
+                    return (
+                      <IncludedCard key={i}>
+                        <IncludedHead>
+                          <Icon size={40} strokeWidth={1.5} aria-hidden />
+                          <IncludedTitle>{inc.title}</IncludedTitle>
+                        </IncludedHead>
+                        <IncludedList>
+                          {inc.items.map((item, j) => (
+                            <li key={j}>{item}</li>
+                          ))}
+                        </IncludedList>
+                      </IncludedCard>
+                    );
+                  })}
+                </IncludedTrack>
+              </IncludedBlock>
+            )}
+          </MainCol>
+
+          <BookingCol>
+            <BookingCard>
+              <PriceLead>
+                From {formatPriceWithUnit(experience.price, "Lei")} / <PriceUnit>person</PriceUnit>
+              </PriceLead>
+              <BookingFields>
+                <BookingField $side="left">
+                  DATES
+                  <BookingSelect aria-label="Dates" defaultValue="">
+                    <option value="">Add dates</option>
+                    {availability.map((slot) => (
+                      <option key={slot} value={slot}>{slot}</option>
+                    ))}
+                  </BookingSelect>
+                  <BookingChevron size={18} aria-hidden />
+                </BookingField>
+                <BookingField $side="right">
+                  GUESTS
+                  <BookingSelect aria-label="Guests" defaultValue="1">
+                    <option value="1">1 guest</option>
+                    <option value="2">2 guests</option>
+                    <option value="3">3+ guests</option>
+                  </BookingSelect>
+                  <BookingChevron size={18} aria-hidden />
+                </BookingField>
+              </BookingFields>
+              {availability.length > 0 ? (
+                <>
+                  {visibleSlots.map((slot, i) => {
+                    const [day, time] = slot.split(" · ");
+                    return (
+                      <SlotRow key={i}>
+                        <div>
+                          <SlotDate>{day}</SlotDate>
+                          {time && <SlotTime>{time}</SlotTime>}
+                        </div>
+                        <SlotSide>
+                          <SlotPrice>{formatPriceWithUnit(experience.price, "lei")} / <span>person</span></SlotPrice>
+                          <ChooseBtn type="button">Choose</ChooseBtn>
+                        </SlotSide>
+                      </SlotRow>
+                    );
+                  })}
+                  {availability.length > SLOTS_SHOWN && (
+                    <MoreDatesBtn type="button" onClick={() => setShowAllDates((v) => !v)}>
+                      {showAllDates ? "Show fewer dates" : "Show more dates"}
+                    </MoreDatesBtn>
+                  )}
+                </>
+              ) : (
+                <NoDates>The host hasn&apos;t published dates yet.</NoDates>
+              )}
+            </BookingCard>
+          </BookingCol>
+        </TopRow>
+
+        {/* Meet the host */}
+        {experience.hostName && (
+          <Section>
+            <HostCard>
+              <Avatar $size={70}>
+                {experience.hostImage ? <Image src={experience.hostImage} alt="" width={70} height={70} /> : initialOf(experience.hostName)}
+              </Avatar>
+              <HostCardText>
+                <HostCardName>Meet your Host, {experience.hostName}</HostCardName>
+                {experience.hostSince && <p>Host on Locals Only since {experience.hostSince}</p>}
+                {reviewCount > 0 && (
+                  <IconLine>
+                    <Star size={16} fill="currentColor" strokeWidth={0} aria-hidden />
+                    {experience.rating.toFixed(2)} ({reviewCount} {reviewCount === 1 ? "Review" : "Reviews"})
+                  </IconLine>
+                )}
+              </HostCardText>
+            </HostCard>
+            {experience.hostBio && <BodyText>{experience.hostBio}</BodyText>}
+            <HostActions>
+              <ContactHostBtn type="button">Contact Host</ContactHostBtn>
+              <SafetyNote>
+                <Radar size={16} aria-hidden />
+                <span>
+                  To protect your payment, never transfer money or communicate outside of the Locals Only website or app{" "}
+                  <a href="/about">Learn more...</a>
+                </span>
+              </SafetyNote>
+            </HostActions>
+            {isHost && <HostActions><EditLink type="button" onClick={() => setIsEditing(true)}>Edit Experience</EditLink></HostActions>}
+          </Section>
+        )}
+
+        {/* Where you'll be */}
+        <Section>
           <SectionTitle>Where you&apos;ll be</SectionTitle>
           <MapFrame>
             <iframe
@@ -1248,115 +1492,125 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
               referrerPolicy="no-referrer-when-downgrade"
             />
           </MapFrame>
-          {experience.whereDescription && <MapDesc>{experience.whereDescription}</MapDesc>}
-          <MapDesc>
+          {experience.whereDescription && <BodyText>{experience.whereDescription}</BodyText>}
+          <MapLink>
             <a href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`} target="_blank" rel="noreferrer">
               Open {experience.location} in Google Maps
             </a>
-          </MapDesc>
-        </MapSection>
+          </MapLink>
+        </Section>
 
-        {/* Things to Know */}
+        {/* Things to know */}
         {(guestRequirements.length > 0 || toBring.length > 0 || experience.cancellationPolicy) && (
-          <SliderSection>
+          <Section>
             <SectionTitle>Things to know</SectionTitle>
             <ThingsGrid>
-              {guestRequirements.length > 0 && (
-                <ThingsCol>
-                  <IncludedTitle>Guest requirements</IncludedTitle>
-                  <ThingsList>
-                    {guestRequirements.map((x, i) => (
-                      <li key={i}>{x}</li>
-                    ))}
-                  </ThingsList>
-                </ThingsCol>
-              )}
-              {toBring.length > 0 && (
-                <ThingsCol>
-                  <IncludedTitle>What to bring</IncludedTitle>
-                  <ThingsList>
-                    {toBring.map((x, i) => (
-                      <li key={i}>{x}</li>
-                    ))}
-                  </ThingsList>
-                </ThingsCol>
-              )}
-              {experience.cancellationPolicy && (
-                <ThingsCol>
-                  <IncludedTitle>Cancellation policy</IncludedTitle>
-                  <ThingsList>
-                    <li>{experience.cancellationPolicy}</li>
-                  </ThingsList>
-                </ThingsCol>
-              )}
+              <ThingsCol>
+                {guestRequirements.length > 0 && (
+                  <>
+                    <ThingsTitle>Guest requirements</ThingsTitle>
+                    <ThingsList>
+                      {guestRequirements.map((x, i) => (
+                        <li key={i}><CircleCheck size={14} aria-hidden />{x}</li>
+                      ))}
+                    </ThingsList>
+                  </>
+                )}
+              </ThingsCol>
+              <ThingsCol>
+                {toBring.length > 0 && (
+                  <>
+                    <ThingsTitle>What to bring</ThingsTitle>
+                    <ThingsList>
+                      {toBring.map((x, i) => (
+                        <li key={i}><CircleCheck size={14} aria-hidden />{x}</li>
+                      ))}
+                    </ThingsList>
+                  </>
+                )}
+              </ThingsCol>
+              <ThingsCol>
+                {experience.cancellationPolicy && (
+                  <>
+                    <ThingsTitle>Cancellation policy</ThingsTitle>
+                    <PolicyText>{experience.cancellationPolicy}</PolicyText>
+                  </>
+                )}
+              </ThingsCol>
             </ThingsGrid>
-          </SliderSection>
+          </Section>
         )}
 
-        {/* Available Badges */}
+        {/* Available badges */}
         {badges.length > 0 && (
-        <SliderSection>
-          <SliderHeader>
-            <SliderTitle>Available badges for this activity</SliderTitle>
-            <SliderNav>
-              <SliderNavBtn $disabled={badgeOffset >= 0} onClick={() => slide(badgeRef, setBadgeOffset, 1, CARD)} aria-label="Previous"><ChevronLeft size={20} /></SliderNavBtn>
-              <SliderNavBtn $disabled={badgeOffset <= -(badges.length * CARD)} onClick={() => slide(badgeRef, setBadgeOffset, -1, CARD)} aria-label="Next"><ChevronRight size={20} /></SliderNavBtn>
-            </SliderNav>
-          </SliderHeader>
-          <SliderTrack ref={badgeRef}>
-            <SliderList $offset={badgeOffset}>
-              {badges.map((b) => (
-                <ChallengeBadgeCard key={b.id} title={b.title} description={b.description} icon={b.icon} complete={false} incompleteLabel="BADGE AVAILABLE" />
-              ))}
-            </SliderList>
-          </SliderTrack>
-        </SliderSection>
+          <Section>
+            <SectionHeader>
+              <SectionTitle>Available badges for this activity</SectionTitle>
+              <PillNav $variant="round">
+                <PillNavBtn type="button" disabled={badgeOffset >= 0} onClick={() => slide(badgeRef, setBadgeOffset, 1, CARD)} aria-label="Previous badges"><ChevronLeft size={20} /></PillNavBtn>
+                <PillNavBtn type="button" $next disabled={badgeOffset <= -((badges.length - 1) * CARD)} onClick={() => slide(badgeRef, setBadgeOffset, -1, CARD)} aria-label="Next badges"><ChevronRight size={20} /></PillNavBtn>
+              </PillNav>
+            </SectionHeader>
+            <SliderTrack ref={badgeRef}>
+              <SliderList $offset={badgeOffset} $gap={10}>
+                {badges.map((b) => (
+                  <ChallengeBadgeCard key={b.id} title={b.title} description={b.description} icon={b.icon} complete={false} incompleteLabel="BADGE AVAILABLE" />
+                ))}
+              </SliderList>
+            </SliderTrack>
+          </Section>
         )}
 
         {/* Reviews */}
         {reviews.length > 0 && (
-        <SliderSection>
-          <SliderHeader>
-            <SliderTitle>Reviews</SliderTitle>
-            <SliderNav>
-              <SliderNavBtn $disabled={reviewOffset >= 0} onClick={() => slide(reviewRef, setReviewOffset, 1, REVIEW_CARD)} aria-label="Prev"><ChevronLeft size={20} /></SliderNavBtn>
-              <SliderNavBtn $disabled={reviewOffset <= -(reviews.length * REVIEW_CARD)} onClick={() => slide(reviewRef, setReviewOffset, -1, REVIEW_CARD)} aria-label="Next"><ChevronRight size={20} /></SliderNavBtn>
-            </SliderNav>
-          </SliderHeader>
-          <SliderTrack ref={reviewRef}>
-            <SliderList $offset={reviewOffset}>
-              {reviews.map((r) => (
-                <ReviewCard key={r.id}>
-                  <ReviewHeader>
-                    <ReviewAvatar />
-                    <ReviewMeta>
-                      <ReviewName>{r.authorName}</ReviewName>
-                      <ReviewSince>
-                        {"★".repeat(r.rating)} ·{" "}
-                        {new Date(r.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
-                      </ReviewSince>
-                    </ReviewMeta>
-                  </ReviewHeader>
-                  <ReviewText>{r.text}</ReviewText>
-                </ReviewCard>
-              ))}
-            </SliderList>
-          </SliderTrack>
-        </SliderSection>
+          <Section>
+            <SectionHeader>
+              <ReviewsTitleRow>
+                <SectionTitle>Reviews</SectionTitle>
+                <IconLine as="span">
+                  <Star size={16} fill="currentColor" strokeWidth={0} aria-hidden />
+                  {experience.rating.toFixed(2)} ({reviewCount} {reviewCount === 1 ? "Review" : "Reviews"})
+                </IconLine>
+              </ReviewsTitleRow>
+              <TextNav>
+                <TextNavBtn type="button" disabled={reviewOffset >= 0} onClick={() => slide(reviewRef, setReviewOffset, 1, REVIEW_CARD)}>Prev</TextNavBtn>
+                <TextNavBtn type="button" $next disabled={reviewOffset <= -((reviews.length - 1) * REVIEW_CARD)} onClick={() => slide(reviewRef, setReviewOffset, -1, REVIEW_CARD)}>Next</TextNavBtn>
+              </TextNav>
+            </SectionHeader>
+            <SliderTrack ref={reviewRef}>
+              <SliderList $offset={reviewOffset} $gap={20}>
+                {reviews.map((r) => (
+                  <ReviewCard key={r.id}>
+                    <ReviewHeader>
+                      <Avatar $size={70} aria-hidden>{initialOf(r.authorName)}</Avatar>
+                      <ReviewMeta>
+                        <ReviewName>{r.authorName}</ReviewName>
+                        <span>
+                          <span aria-label={`${r.rating} out of 5 stars`}>{"★".repeat(r.rating)}</span> ·{" "}
+                          {new Date(r.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                        </span>
+                      </ReviewMeta>
+                    </ReviewHeader>
+                    <ReviewText>{r.text}</ReviewText>
+                  </ReviewCard>
+                ))}
+              </SliderList>
+            </SliderTrack>
+          </Section>
         )}
 
-        {/* Similar Experiences */}
+        {/* Similar experiences */}
         {similar.length > 0 && (
-          <SliderSection>
-            <SliderHeader>
-              <SliderTitle>Similar experiences</SliderTitle>
-              <SliderNav>
-                <SliderNavBtn $disabled={similarOffset >= 0} onClick={() => slide(similarRef, setSimilarOffset, 1, 280)} aria-label="Previous similar experiences"><ChevronLeft size={20} /></SliderNavBtn>
-                <SliderNavBtn $disabled={similarOffset <= -(similar.length * 280)} onClick={() => slide(similarRef, setSimilarOffset, -1, 280)} aria-label="Next similar experiences"><ChevronRight size={20} /></SliderNavBtn>
-              </SliderNav>
-            </SliderHeader>
+          <SimilarSection>
+            <SectionHeader>
+              <AccentTitle>Similar experiences</AccentTitle>
+              <PillNav $variant="square">
+                <PillNavBtn type="button" disabled={similarOffset >= 0} onClick={() => slide(similarRef, setSimilarOffset, 1, CARD)} aria-label="Previous similar experiences"><ChevronLeft size={20} /></PillNavBtn>
+                <PillNavBtn type="button" $next disabled={similarOffset <= -((similar.length - 1) * CARD)} onClick={() => slide(similarRef, setSimilarOffset, -1, CARD)} aria-label="Next similar experiences"><ChevronRight size={20} /></PillNavBtn>
+              </PillNav>
+            </SectionHeader>
             <SliderTrack ref={similarRef}>
-              <SliderList $offset={similarOffset}>
+              <SliderList $offset={similarOffset} $gap={20}>
                 {similar.map((e) => (
                   <SimilarSlot key={e.id}>
                     <ExperienceCard experience={e} />
@@ -1364,36 +1618,9 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
                 ))}
               </SliderList>
             </SliderTrack>
-          </SliderSection>
+          </SimilarSection>
         )}
-      </MainCol>
-
-        {/* Booking column – sticky after hero */}
-        <BookingCol>
-          <BookingCard>
-            <PriceLead>From {formatPriceWithUnit(experience.price, "Lei")} <PriceUnit>/ person</PriceUnit></PriceLead>
-            <BookingLabel>DATES</BookingLabel>
-            <BookingSelect aria-label="Dates"><option>Select dates</option></BookingSelect>
-            <BookingLabel>GUESTS</BookingLabel>
-            <BookingSelect aria-label="Guests"><option>1 guest</option><option>2 guests</option><option>3+ guests</option></BookingSelect>
-            {availability.length > 0 ? (
-              <SlotList>
-                {availability.map((slot, i) => (
-                  <SlotRow key={i}>
-                    <div>
-                      <SlotInfo>{slot}</SlotInfo>
-                      <SlotPrice>{formatPriceWithUnit(experience.price, "Lei")} / person</SlotPrice>
-                    </div>
-                    <ChooseBtn type="button">Choose</ChooseBtn>
-                  </SlotRow>
-                ))}
-              </SlotList>
-            ) : (
-              <SlotInfo>The host hasn&apos;t published dates yet.</SlotInfo>
-            )}
-          </BookingCard>
-        </BookingCol>
-      </PageWrapper>
+      </ContentWrap>
 
       {photoModalOpen && (
         <PhotoModalOverlay onClick={() => setPhotoModalOpen(false)} role="dialog" aria-modal="true" aria-label="Photo gallery">
