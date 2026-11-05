@@ -16,6 +16,12 @@ declare module "styled-components" {
       glass: string;
       glassBorder: string;
       focus: string;
+      /** Dark card fill used by the detail-page panels (What's included, booking) in both themes. */
+      panel: string;
+      onPanel: string;
+      /** Secondary text on a panel; >= 4.5:1 on panel. */
+      panelMuted: string;
+      panelLine: string;
     };
     shadows: {
       card: string;

@@ -17,6 +17,10 @@ export const lightTheme: DefaultTheme = {
     glass: "rgba(255, 255, 255, 0.85)",
     glassBorder: "rgba(31, 31, 31, 0.10)",
     focus: "#1f1f1f",
+    panel: "#333333",
+    onPanel: "#ffffff",
+    panelMuted: "#a3a3a3",
+    panelLine: "#717171",
   },
   shadows: {
     card: "0 4px 16px rgba(0, 0, 0, 0.08)",
@@ -39,6 +43,10 @@ export const darkTheme: DefaultTheme = {
     glass: "rgba(255, 255, 255, 0.08)",
     glassBorder: "rgba(255, 255, 255, 0.2)",
     focus: "#E2A506",
+    panel: "#262a33",
+    onPanel: "#ffffff",
+    panelMuted: "#a3a3a3",
+    panelLine: "#717171",
   },
   shadows: {
     card: "0 4px 16px rgba(0, 0, 0, 0.4)",
