@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { parseIncluded } from "@/lib/experienceExtras";
+import { getUpcomingSlots } from "@/lib/bookings";
 import {
   mapActivityTypeFromEnum,
   mapTimeOfDayFromEnum,
@@ -25,6 +26,8 @@ export async function getExperienceById(id: string) {
   if (!experience) return null;
 
   const { host, reviews, _count, included, ...rest } = experience;
+  // Bookable dates for the booking box; empty until the TimeSlot table exists and has rows.
+  const slots = await getUpcomingSlots(experience.id, experience.price).catch(() => []);
   const images = (rest.images?.length ?? 0) > 0 ? rest.images : rest.image ? [rest.image] : [];
 
   return {
@@ -36,6 +39,7 @@ export async function getExperienceById(id: string) {
     hostBio: host?.bio ?? null,
     hostSince: host ? host.createdAt.getFullYear() : null,
     reviewCount: _count.reviews,
+    slots,
     reviews: reviews.map((r) => ({
       id: r.id,
       authorName: r.authorName,

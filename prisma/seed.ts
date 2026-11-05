@@ -1,5 +1,7 @@
 import { PrismaClient, Prisma, Role, ActivityType, TimeOfDay, Duration, Special } from "@prisma/client";
 
+import { seedBookingData } from "./bookingSeed";
+
 const prisma = new PrismaClient();
 
 const U = (id: string) => `https://images.unsplash.com/photo-${id}?w=1200&h=800&fit=crop`;
@@ -290,6 +292,9 @@ async function main() {
   }
 
   console.log(`Seeded ${GUIDES.length} hosts and ${EXPERIENCES.length} experiences.`);
+
+  const extra = await seedBookingData(prisma);
+  console.log(`Added ${extra.slots} time slots, ${extra.bookings} bookings and ${extra.reviews} reviews.`);
 }
 
 main()

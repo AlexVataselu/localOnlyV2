@@ -5,7 +5,7 @@ import Image from "next/image";
 import styled from "styled-components";
 import ExperienceExtrasFields from "@/components/ExperienceExtrasFields";
 import {
-  Share2, Heart, ChevronLeft, ChevronRight, ChevronDown, X, Grip, Plus, Trash2, Star, Radar, CircleCheck,
+  Share2, Heart, ChevronLeft, ChevronRight, X, Grip, Plus, Trash2, Star, Radar, CircleCheck,
   CupSoda, Utensils, Bus, Backpack, Tent, Check, type LucideIcon,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -26,6 +26,8 @@ import {
 import type { Experience, ExperienceExtras, ExperienceReview } from "@/types/experience";
 import ChallengeBadgeCard from "@/components/home/ChallengeBadgeCard";
 import ExperienceCard from "@/components/ExperienceCard";
+import BookingBox from "@/components/booking/BookingBox";
+import type { SlotDTO } from "@/lib/slotTime";
 
 // ---------- Layout ----------
 /** Full-width hero: title, stars, location, share, save, photo gallery */
@@ -50,21 +52,31 @@ const PageWrapper = styled.div`
 
 const ContentWrap = styled.div`
   width: 100%;
-  padding: 0 clamp(24px, 5vw, 80px) 4rem;
+  padding: 0 clamp(16px, 5vw, 80px) 4rem;
+
+  /* Room for the phone booking bar. */
+  @media (max-width: 960px) { padding-bottom: 96px; }
 `;
 
-/** About the experience on the left, booking card on the right, aligned to the bottom as in the design. */
-const TopRow = styled.div`
+/** Everything between the photos and the footer sits in one card, with the booking box beside it. */
+const ContentBox = styled.div`
+  /* Its own layer, above the fixed topographic texture on html::before, so the card reads as solid. */
+  position: relative;
+  z-index: 1;
   display: flex;
-  gap: 40px;
-  align-items: flex-end;
-  padding: 40px 0;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  gap: clamp(28px, 3.5vw, 48px);
+  align-items: flex-start;
+  padding: 8px clamp(20px, 3.5vw, 48px) 48px;
+  border-radius: 24px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.cardBackground};
+  box-shadow: ${({ theme }) => theme.shadows.card};
 
-  @media (max-width: 1100px) {
+  @media (max-width: 960px) {
     flex-direction: column;
     align-items: stretch;
+    gap: 0;
+    padding-top: 24px;
   }
 `;
 
@@ -74,16 +86,30 @@ const MainCol = styled.div`
   max-width: 100%;
 `;
 
+/** Stays in view while the page scrolls (below the sticky header). */
 const BookingCol = styled.aside`
-  width: 300px;
+  width: 340px;
   flex-shrink: 0;
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1200px) { width: 310px; }
+  position: sticky;
+  top: 120px;
+  margin-top: 40px;
+
+  @media (max-width: 960px) {
+    position: static;
     width: 100%;
-    max-width: 420px;
+    max-width: 520px;
+    margin: 0 0 8px;
     /* On phones, show price and booking right after the photos, not five screens down. */
     order: -1;
+    scroll-margin-top: 110px;
   }
+`;
+
+const AboutBlock = styled.div`
+  padding: 40px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const IncludedBlock = styled.div`
@@ -455,7 +481,7 @@ const BookingCard = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.accent};
   background: ${({ theme }) => theme.colors.panel};
   color: ${({ theme }) => theme.colors.onPanel};
-  filter: drop-shadow(4px 4px 2px rgba(0, 0, 0, 0.25));
+  box-shadow: 4px 4px 2px rgba(0, 0, 0, 0.25);
 `;
 const PriceLead = styled.p`
   margin: 0;
@@ -466,107 +492,6 @@ const PriceUnit = styled.span`
   font-size: 1rem;
   font-weight: 400;
 `;
-const BookingFields = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-`;
-const BookingField = styled.label<{ $side: "left" | "right" }>`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-  padding: 8px 32px 8px 16px;
-  border: 1px solid ${({ theme }) => theme.colors.panelLine};
-  border-radius: ${({ $side }) => ($side === "left" ? "10px 0 0 10px" : "0 10px 10px 0")};
-  ${({ $side }) => ($side === "right" ? "border-left: none;" : "")}
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:focus-within { outline: 2px solid ${({ theme }) => theme.colors.accent}; outline-offset: -2px; }
-`;
-const BookingSelect = styled.select`
-  appearance: none;
-  width: 100%;
-  min-width: 0;
-  border: none;
-  padding: 0;
-  text-overflow: ellipsis;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.panelMuted};
-  font-size: 0.75rem;
-  font-weight: 300;
-  cursor: pointer;
-  outline: none;
-
-  option { color: #1f1f1f; }
-`;
-const BookingChevron = styled(ChevronDown)`
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-`;
-const SlotRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 20px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.panelLine};
-`;
-const SlotDate = styled.p`
-  margin: 0 0 10px 0;
-  font-size: 0.875rem;
-`;
-const SlotTime = styled.p`
-  margin: 0;
-  font-size: 0.75rem;
-`;
-const SlotSide = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-  flex-shrink: 0;
-`;
-const SlotPrice = styled.p`
-  margin: 0;
-  font-size: 0.875rem;
-  white-space: nowrap;
-
-  span { font-size: 0.75rem; color: ${({ theme }) => theme.colors.panelMuted}; }
-`;
-const ChooseBtn = styled.button`
-  padding: 8px 20px;
-  border-radius: 10px;
-  border: none;
-  background: ${({ theme }) => theme.colors.accent};
-  color: ${({ theme }) => theme.colors.onAccent};
-  font-size: 0.875rem;
-  font-weight: 900;
-  cursor: pointer;
-
-  &:hover { background: ${({ theme }) => theme.colors.accentHover}; }
-`;
-const MoreDatesBtn = styled.button`
-  width: 100%;
-  padding: 8px;
-  border-radius: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.panelLine};
-  background: ${({ theme }) => theme.colors.onPanel};
-  color: ${({ theme }) => theme.colors.panel};
-  font-size: 0.875rem;
-  font-weight: 900;
-  cursor: pointer;
-`;
-const NoDates = styled.p`
-  margin: 0;
-  font-size: 0.875rem;
-  color: ${({ theme }) => theme.colors.panelMuted};
-`;
-
 // ---------- Meet the host ----------
 const HostCard = styled.div`
   display: flex;
@@ -666,11 +591,10 @@ const MapLink = styled.p`
 // ---------- Things to know ----------
 const ThingsGrid = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 371px) auto minmax(0, 1fr);
-  gap: 40px;
+  /* Columns wrap by the space the box gives them, not the window width. */
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 28px 40px;
   margin-top: 20px;
-
-  @media (max-width: 900px) { grid-template-columns: 1fr; gap: 28px; }
 `;
 const ThingsCol = styled.div`
   display: flex;
@@ -908,8 +832,6 @@ const INCLUDED_ICONS: Array<[RegExp, LucideIcon]> = [
 ];
 const includedIcon = (title: string): LucideIcon => INCLUDED_ICONS.find(([re]) => re.test(title))?.[1] ?? Check;
 const initialOf = (name?: string | null) => (name?.trim()[0] ?? "?").toUpperCase();
-/** Booking slots shown before "Show more dates". */
-const SLOTS_SHOWN = 3;
 
 /** Badges a guest can work towards, by activity type. None are "completed": there is no progress tracking yet. */
 const BADGES_BY_ACTIVITY: Record<string, Array<{ id: string; title: string; description: string; icon: string }>> = {
@@ -998,6 +920,7 @@ type ExperienceDetailProps = {
     hostSince?: number | null;
     reviewCount?: number;
     reviews?: ExperienceReview[];
+    slots?: SlotDTO[];
   } & Partial<ExperienceExtras>;
 };
 
@@ -1026,7 +949,6 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
   const [reviewOffset, setReviewOffset] = useState(0);
   const [similarOffset, setSimilarOffset] = useState(0);
   const [similar, setSimilar] = useState<Experience[]>([]);
-  const [showAllDates, setShowAllDates] = useState(false);
   const includedRef = useRef<HTMLDivElement>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
@@ -1038,12 +960,10 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
   const included = experience.included ?? [];
   const toBring = experience.toBring ?? [];
   const guestRequirements = experience.guestRequirements ?? [];
-  const availability = experience.availability ?? [];
   const languages = experience.languages ?? [];
   const badges = Array.from(
     new Map((experience.activityTypes ?? []).flatMap((t) => BADGES_BY_ACTIVITY[t] ?? []).map((b) => [b.id, b])).values(),
   );
-  const visibleSlots = showAllDates ? availability : availability.slice(0, SLOTS_SHOWN);
   const metaLine = [experience.duration, languages.length ? `Hosted in ${languages.join(" and ")}` : null].filter(Boolean).join(" - ");
   const scrollIncluded = (dir: 1 | -1) => includedRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
   const mapQuery = encodeURIComponent(`${experience.location}, Romania`);
@@ -1332,8 +1252,9 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
 
       <ContentWrap>
         {/* About the experience + booking card, side by side (the card sits level with the bottom of the column). */}
-        <TopRow>
+        <ContentBox>
           <MainCol>
+            <AboutBlock>
             <HostIntro>
               <div>
                 <HostIntroTitle>
@@ -1370,7 +1291,7 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
                     </PillNav>
                   )}
                 </SectionHeader>
-                <IncludedTrack ref={includedRef}>
+                <IncludedTrack ref={includedRef} tabIndex={0} role="region" aria-label="What's included">
                   {included.map((inc, i) => {
                     const Icon = includedIcon(inc.title);
                     return (
@@ -1390,63 +1311,7 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
                 </IncludedTrack>
               </IncludedBlock>
             )}
-          </MainCol>
-
-          <BookingCol>
-            <BookingCard>
-              <PriceLead>
-                From {formatPriceWithUnit(experience.price, "Lei")} / <PriceUnit>person</PriceUnit>
-              </PriceLead>
-              <BookingFields>
-                <BookingField $side="left">
-                  DATES
-                  <BookingSelect aria-label="Dates" defaultValue="">
-                    <option value="">Add dates</option>
-                    {availability.map((slot) => (
-                      <option key={slot} value={slot}>{slot}</option>
-                    ))}
-                  </BookingSelect>
-                  <BookingChevron size={18} aria-hidden />
-                </BookingField>
-                <BookingField $side="right">
-                  GUESTS
-                  <BookingSelect aria-label="Guests" defaultValue="1">
-                    <option value="1">1 guest</option>
-                    <option value="2">2 guests</option>
-                    <option value="3">3+ guests</option>
-                  </BookingSelect>
-                  <BookingChevron size={18} aria-hidden />
-                </BookingField>
-              </BookingFields>
-              {availability.length > 0 ? (
-                <>
-                  {visibleSlots.map((slot, i) => {
-                    const [day, time] = slot.split(" · ");
-                    return (
-                      <SlotRow key={i}>
-                        <div>
-                          <SlotDate>{day}</SlotDate>
-                          {time && <SlotTime>{time}</SlotTime>}
-                        </div>
-                        <SlotSide>
-                          <SlotPrice>{formatPriceWithUnit(experience.price, "lei")} / <span>person</span></SlotPrice>
-                          <ChooseBtn type="button">Choose</ChooseBtn>
-                        </SlotSide>
-                      </SlotRow>
-                    );
-                  })}
-                  {availability.length > SLOTS_SHOWN && (
-                    <MoreDatesBtn type="button" onClick={() => setShowAllDates((v) => !v)}>
-                      {showAllDates ? "Show fewer dates" : "Show more dates"}
-                    </MoreDatesBtn>
-                  )}
-                </>
-              ) : (
-                <NoDates>The host hasn&apos;t published dates yet.</NoDates>
-              )}
-            </BookingCard>
-          </BookingCol>
-        </TopRow>
+            </AboutBlock>
 
         {/* Meet the host */}
         {experience.hostName && (
@@ -1620,6 +1485,12 @@ export default function ExperienceDetailContent({ experience }: ExperienceDetail
             </SliderTrack>
           </SimilarSection>
         )}
+          </MainCol>
+
+          <BookingCol>
+            <BookingBox experienceId={experience.id} basePrice={experience.price} initialSlots={experience.slots ?? []} />
+          </BookingCol>
+        </ContentBox>
       </ContentWrap>
 
       {photoModalOpen && (
