@@ -12,11 +12,11 @@ const roboto = Roboto({ subsets: ["latin"], weight: ["900"] });
 
 /**
  * One screen, one guide. The guide's portrait fills the hero with its face in
- * the upper right; the copy holds the left; that guide's badge cards dock in
- * the bottom-right corner, over the portrait, as the next step after the
- * action. The guide picker names each mascot and swaps portrait, line and
- * badges together. The hero is always on a dark photo, so its colours are
- * fixed light-on-dark in both themes.
+ * the upper right. The left column reads top to bottom: the guide's line, the
+ * heading, the actions, then that guide's badge cards as the next step. The
+ * guide picker is a rail on the portrait's right edge (a row under the copy on
+ * phones) and swaps portrait, line and badges together. The hero is always on
+ * a dark photo, so its colours are fixed light-on-dark in both themes.
  */
 const DESKTOP = "@media (min-width: 1024px)";
 const GUTTER = "clamp(16px, 5vw, 80px)";
@@ -51,10 +51,12 @@ const Hero = styled.section`
 
   ${DESKTOP} {
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    /* Left: copy over badges, exactly two 300px cards wide. Right: the portrait, with the guide rail at its edge. */
+    grid-template-columns: minmax(0, 630px) minmax(0, 1fr) auto;
+    grid-template-rows: 1fr auto;
     column-gap: 2rem;
     min-height: max(960px, calc(100svh - ${HEADER}px));
-    padding: 0 0 2.5rem ${GUTTER};
+    padding: 0 ${GUTTER} 2.5rem;
   }
 `;
 
@@ -97,7 +99,7 @@ const Scrim = styled.div`
     inset: 0;
     height: auto;
     background:
-      linear-gradient(90deg, ${INK} 30%, rgba(15, 17, 22, 0.75) 40%, rgba(15, 17, 22, 0) 58%),
+      linear-gradient(90deg, ${INK} 32%, rgba(15, 17, 22, 0.8) 44%, rgba(15, 17, 22, 0) 60%),
       linear-gradient(to bottom, rgba(15, 17, 22, 0) 45%, rgba(15, 17, 22, 0.55) 100%);
   }
 `;
@@ -111,11 +113,13 @@ const Copy = styled.div`
   padding: calc(58svh - 7rem) ${GUTTER} 0;
 
   ${DESKTOP} {
+    grid-column: 1;
+    grid-row: 1;
     padding: 3rem 0 0;
   }
 `;
 
-/** The line, heading and actions, centred in the space above the guide row. */
+/** The line, heading and actions, centred in the space above the badges. */
 const Lead = styled.div`
   display: flex;
   flex-direction: column;
@@ -200,18 +204,49 @@ const Secondary = styled(Link)`
   }
 `;
 
-/** Pick a guide: each button shows the mascot and its name. */
-/** The cast: five equal tiles, portrait over name; the row's foot lines up with the badge cards' foot. */
+/**
+ * Pick a guide: each button shows the mascot and its name. A row of five on
+ * phones; on desktop a frosted rail down the portrait's right edge, like the
+ * slide's own pagination, clear of the face and the copy.
+ */
 const Picker = styled.div`
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.5rem;
   margin-top: 2.5rem;
+  padding: 0 ${GUTTER};
 
   ${DESKTOP} {
-    max-width: 460px;
-    gap: 0.75rem;
-    margin: 2rem 0 1.25rem;
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-self: center;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+    margin: 0;
+    padding: 1rem 0.65rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(15, 17, 22, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+`;
+
+/** "Guides", over the rail (desktop only). */
+const PickerLabel = styled.p`
+  display: none;
+
+  ${DESKTOP} {
+    display: block;
+    margin: 0 0 0.15rem;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
   }
 `;
 
@@ -230,11 +265,21 @@ const Guide = styled.button<{ $active: boolean }>`
   font-weight: ${({ $active }) => ($active ? 700 : 600)};
   cursor: pointer;
 
+  ${DESKTOP} {
+    gap: 0.35rem;
+    padding: 0;
+    font-size: 0.8rem;
+  }
+
   span {
     position: relative;
     display: block;
     width: min(100%, 64px);
     aspect-ratio: 1;
+
+    ${DESKTOP} {
+      width: 56px;
+    }
     border-radius: 50%;
     overflow: hidden;
     /* The active guide gets the accent ring; the rest sit back a little. */
@@ -264,7 +309,7 @@ const Guide = styled.button<{ $active: boolean }>`
   }
 `;
 
-/** The approved badge slider, docked in the portrait's lower corner. */
+/** The approved badge slider, under the copy in the left column. */
 const Dock = styled.div`
   position: relative;
   z-index: 1;
@@ -272,9 +317,10 @@ const Dock = styled.div`
   padding: 0 ${GUTTER} 2.5rem;
 
   ${DESKTOP} {
-    align-self: end;
-    margin-top: 0;
-    padding: 0 ${GUTTER} 0 0;
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 2.5rem;
+    padding: 0;
   }
 `;
 
@@ -310,7 +356,10 @@ export default function HeroSection() {
           <Secondary href="/experiences/new">Host an experience</Secondary>
         </Actions>
         </Lead>
-        <Picker role="group" aria-label="Choose a guide">
+      </Copy>
+
+      <Picker role="group" aria-label="Choose a guide">
+        <PickerLabel aria-hidden="true">Guides</PickerLabel>
           {HERO_SLIDES.map((s, i) => (
             <Guide key={s.image} type="button" $active={i === index} aria-pressed={i === index} onClick={() => setIndex(i)}>
               <span>
@@ -319,8 +368,7 @@ export default function HeroSection() {
               {NAMES[s.image] ?? `Guide ${i + 1}`}
             </Guide>
           ))}
-        </Picker>
-      </Copy>
+      </Picker>
 
       <Dock>
         <ChallengeBadgesSlider key={index} challenges={slide.challenges} title={slide.badgeSectionTitle} dense />
