@@ -22,6 +22,7 @@ yarn typecheck && yarn lint
 yarn build
 yarn db:push          # apply prisma/schema.prisma to DATABASE_URL
 yarn db:seed          # DESTRUCTIVE: deletes all users/experiences, then seeds Romanian demo data
+yarn db:seed-bookings # additive, re-runnable: time slots for the next 90 days, demo bookings, reviews
 ```
 
 Environment: `npx vercel env pull .env --environment=preview` writes the Vercel variables into `.env`, which git ignores. Never commit `.env*` files.
@@ -52,4 +53,10 @@ Environment: `npx vercel env pull .env --environment=preview` writes the Vercel 
 - `src/components/ExperienceDetailContent.tsx`: the detail page. Each section renders only when the listing has data.
 - `src/components/ExperienceExtrasFields.tsx`: the listing-details fields shared by the create and edit forms.
 - `src/lib/experienceExtras.ts`: validation of those fields in the API.
-- `prisma/schema.prisma` and `prisma/seed.ts`: the schema and the demo data.
+- `prisma/schema.prisma` and `prisma/seed.ts`: the schema and the demo data. `prisma/bookingSeed.ts` generates slots, bookings and extra reviews.
+- **Bookings:**
+  - `TimeSlot` (date, capacity, optional price) and `Booking` (guests, prices copied in, reference like `LO-7K2M9Q`).
+  - `src/lib/bookings.ts`: upcoming slots with places left, and `createBooking`, which locks the slot row so a slot can't be overbooked.
+  - `src/lib/slotTime.ts`: every slot time is shown in Romanian time (`Europe/Bucharest`), whatever the visitor's zone.
+  - API: `GET /api/experiences/[id]/slots`, `POST /api/bookings`. Guests can book without signing in; no payment is taken.
+  - UI: `src/components/booking/BookingBox.tsx` (sticky side box, checkout, confirmation, phone bar) and `BookingCalendar.tsx` (the Figma date picker).

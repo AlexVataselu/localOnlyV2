@@ -56,6 +56,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
         hostSince: experience.hostSince,
         reviewCount: experience.reviewCount,
         reviews: experience.reviews,
+        slots: experience.slots,
       }}
     />
   );
