@@ -62,13 +62,6 @@ const FilterSection = styled.div`
   }
 `;
 
-const FilterLabel = styled.span`
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  white-space: nowrap;
-`;
-
 const FilterButton = styled.button<{ $isSelected: boolean }>`
   padding: 0.5rem 1rem;
   border-radius: 8px;
