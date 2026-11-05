@@ -67,7 +67,7 @@ const NavArrowBtn = styled.button<{ $active?: boolean }>`
   width: 44px;
   height: 44px;
   border: none;
-  background: ${({ $active, theme }) => ($active ? "transparent" : "rgba(0, 0, 0, 0.45)")};
+  background: ${({ $active }) => ($active ? "transparent" : "rgba(0, 0, 0, 0.45)")};
   color: #fff;
   cursor: ${({ $active }) => ($active ? "pointer" : "not-allowed")};
   display: flex;

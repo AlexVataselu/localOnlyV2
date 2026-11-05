@@ -3,7 +3,13 @@
  * Run: tsx scripts/populate-filters.ts
  */
 
-import { PrismaClient } from "@prisma/client";
+import {
+  PrismaClient,
+  type ActivityType,
+  type Duration,
+  type Special,
+  type TimeOfDay,
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -142,10 +148,10 @@ async function main() {
     await prisma.experience.update({
       where: { id: experience.id },
       data: {
-        activityTypes: activityTypes as any,
-        timeOfDays: timeOfDays as any,
-        duration: duration as any,
-        specials: specials as any,
+        activityTypes: activityTypes as ActivityType[],
+        timeOfDays: timeOfDays as TimeOfDay[],
+        duration: duration as Duration | null,
+        specials: specials as Special[],
       },
     });
 
